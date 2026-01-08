@@ -1,6 +1,6 @@
 {
   "name": "@kernelift/ai-chat",
-  "version": "2.3.2",
+  "version": "2.4.0",
   "description": "kernelift 前端 AI chat 聊天框组件",
   "type": "module",
   "author": "charles-chan <charleschan2016@m.scnu.edu.cn>",
@@ -10,6 +10,10 @@
     "SSE-Client.md",
     "CHANGELOG.md"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kernelift-labs/ai-chat.git"
+  },
   "private": false,
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -39,6 +43,11 @@
   ],
   "peerDependencies": {
     "@kernelift/markdown": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@kernelift/markdown": {
+      "optional": true
+    }
   },
   "dependencies": {
     "@kernelift/utils": "workspace:*",

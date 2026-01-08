@@ -1,5 +1,11 @@
 # @kernelift/ai-chat
 
+## 2.4.0
+
+### Minor Changes
+
+- 支持替换MdRender
+
 ## 2.3.2
 
 ### Patch Changes

@@ -55,10 +55,10 @@ onClear?: (() => any) | undefined;
 "onUpdate:loading"?: ((value: boolean) => any) | undefined;
 "onUpdate:record-id"?: ((value: string | undefined) => any) | undefined;
 }>, {
+themeMode: "light" | "dark";
 i18n: {
 [key: string]: any;
 };
-themeMode: "light" | "dark";
 hasThemeMode: boolean;
 hasThinking: boolean;
 hasNetSearch: boolean;
@@ -110,13 +110,13 @@ declare const __VLS_component_4: DefineComponent<__VLS_PublicProps_4, {}, {}, {}
 }, string, PublicProps, Readonly<__VLS_PublicProps_4> & Readonly<{
 "onUpdate:collapse"?: ((value: boolean) => any) | undefined;
 }>, {
+plugins: any[];
+options: any;
 markdownClass: string;
 loading: boolean;
 i18n: {
 [key: string]: any;
 };
-plugins: any[];
-options: any;
 }, {}, {}, {}, string, ComponentProvideOptions, false, {}, HTMLDivElement>;
 
 declare type __VLS_Props = {
@@ -131,6 +131,7 @@ declare type __VLS_Props = {
     plugins?: any[];
     options?: any;
     afterRender?: (md: any) => void;
+    markdownRender?: Component;
     themeMode?: 'light' | 'dark';
 };
 
@@ -161,6 +162,7 @@ declare type __VLS_Props_5 = {
     };
     plugins?: any[];
     options?: any;
+    markdownRender?: Component;
     afterRender?: (md: any) => void;
     themeMode?: 'light' | 'dark';
 };
@@ -598,6 +600,7 @@ export declare interface ChatProps {
     autoScrollPauseTime?: number;
     markdownPlugins?: any[];
     markdownOptions?: any;
+    markdownRender?: Component;
     onMarkdownAfterRender?: (md: any) => void;
 }
 

@@ -1525,6 +1525,7 @@ function handleScrollBottom() {
 | `i18n`                  | `Record<string, any>`    | `zhCN`      | 国际化配置                                         |
 | `markdownPlugins`       | `any[]`                  | `[]`        | Markdown 插件列表                                  |
 | `markdownOptions`       | `any`                    | `{}`        | Markdown 配置选项                                  |
+| `markdownRender`        | `Component`              | `MdRender`  | 自定义 markdown 渲染组件                           |
 | `onMarkdownAfterRender` | `(md: any) => void`      | `undefined` | Markdown 渲染后回调                                |
 
 ### v-model 双向绑定
