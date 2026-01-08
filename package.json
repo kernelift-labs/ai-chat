@@ -1,0 +1,55 @@
+{
+  "name": "@kernelift/ai-chat",
+  "version": "2.3.2",
+  "description": "kernelift 前端 AI chat 聊天框组件",
+  "type": "module",
+  "author": "charles-chan <charleschan2016@m.scnu.edu.cn>",
+  "files": [
+    "dist",
+    "README.md",
+    "SSE-Client.md",
+    "CHANGELOG.md"
+  ],
+  "private": false,
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "typings": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js"
+    },
+    "./style.css": "./dist/ai-chat.css"
+  },
+  "scripts": {
+    "build": "run-p type-check \"build-only {@}\" --",
+    "format": "prettier --write src/",
+    "test:unit": "vitest",
+    "build-only": "vite build",
+    "type-check": "vue-tsc --build",
+    "prepublishOnly": "pnpm run build"
+  },
+  "license": "GPL-3.0-only",
+  "keywords": [
+    "kernelift",
+    "vue3",
+    "frontend",
+    "chat",
+    "ai-chat"
+  ],
+  "peerDependencies": {
+    "@kernelift/markdown": "workspace:*"
+  },
+  "dependencies": {
+    "@kernelift/utils": "workspace:*",
+    "@vueuse/core": "^14.0.0"
+  },
+  "devDependencies": {
+    "@kernelift/configs": "workspace:*",
+    "sass": "^1.93.2",
+    "vite-plugin-dts": "^4.5.0",
+    "@vue/test-utils": "^2.4.0",
+    "jsdom": "^25.0.0",
+    "vitest": "^3.2.4"
+  }
+}
