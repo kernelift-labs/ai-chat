@@ -3,7 +3,7 @@
 [![npm version](https://badge.fury.io/js/%40kernelift%2Fai-chat.svg)](https://badge.fury.io/js/%40kernelift%2Fai-chat)
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](https://opensource.org/licenses/GPL-3.0)
 
-基于 Vue 3 + TypeScript 的现代化 AI 聊天框组件，提供企业级的对话界面解决方案。
+基于 Vue 3 + TypeScript 的现代化 AI 聊天框组件，提供企业级的对话界面解决方案。无UI库绑定。
 
 ## ✨ 特性
 
@@ -790,253 +790,1251 @@ const handleStreamResponse = async (question: string, enableThink?: boolean) => 
 
 ## 💻 完整示例
 
-### 基础聊天应用
+基于硅基流动api和 primevue ui库的demo实现如下
+
+### vue展示层
 
 ```vue
+<!-- eslint-disable @typescript-eslint/no-explicit-any -->
+<script setup lang="ts">
+import { ref, watch } from 'vue';
+import { ChatContainer } from '@kernelift/ai-chat';
+import { useChat } from './use-chat';
+import '@kernelift/ai-chat/style.css';
+import { CHAT_API_KEY, CHAT_BASE_URL, CHAT_DEFAULT_MODEL } from './constants';
+import Button from 'primevue/button';
+import Textarea from 'primevue/textarea';
+import Select from 'primevue/select';
+import Dialog from 'primevue/dialog';
+import Toast from 'primevue/toast';
+import ConfirmDialog from 'primevue/confirmdialog';
+
+defineOptions({
+  name: 'AiChat'
+});
+
+const {
+  isNewRecord,
+  chatModel,
+  availableModels,
+  showWorkspace,
+  userQuestion,
+  chatRecords,
+  chatMessages,
+  generateLoading,
+  senderLoading,
+  isLoadingModels,
+  handleSend,
+  handleCancel,
+  chatRecordActions,
+  handleChangeRecord,
+  handleCreateRecord,
+  changeShowWorkspace,
+  changeModel,
+  showEditNameDialog,
+  editRecord,
+  updateRecordName,
+
+  bubbleEventActions,
+  handleBubbleEvent,
+
+  themeMode,
+  changeThemeMode,
+
+  showMessageDetailDialog,
+  messageDetail,
+  showEditMessageDialog,
+  editMessage,
+  handleEditMessageContent,
+  activeRecordId,
+  showEditPromptDialog,
+  editPromptRecord,
+  promptContent,
+  updateRecordPrompt,
+  handleShowEditPrompt
+} = useChat({
+  apiKey: CHAT_API_KEY,
+  baseURL: CHAT_BASE_URL,
+  uuid: 'openai',
+  model: CHAT_DEFAULT_MODEL
+});
+
+const tempEditContent = ref('');
+const isRecording = ref(false);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let recognition: any = null;
+
+function toggleSpeech() {
+  if (isRecording.value) {
+    if (recognition) {
+      recognition.stop();
+    }
+    isRecording.value = false;
+    return;
+  }
+
+  const SpeechRecognition =
+    (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    alert('当前浏览器不支持语音输入');
+    return;
+  }
+
+  recognition = new SpeechRecognition();
+  recognition.lang = 'zh-CN';
+  recognition.continuous = true;
+  recognition.interimResults = true;
+
+  recognition.onstart = () => {
+    isRecording.value = true;
+  };
+
+  recognition.onend = () => {
+    isRecording.value = false;
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  recognition.onresult = (event: any) => {
+    for (let i = event.resultIndex; i < event.results.length; ++i) {
+      if (event.results[i].isFinal) {
+        userQuestion.value += event.results[i][0].transcript;
+      }
+    }
+  };
+
+  recognition.start();
+}
+
+watch(showEditMessageDialog, (val) => {
+  if (val && editMessage.value) {
+    tempEditContent.value = editMessage.value.content;
+  }
+});
+
+/**
+ * 处理键盘事件
+ * Enter: 发送消息
+ * Shift + Enter: 换行
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function handleKeydown(event: KeyboardEvent, execute: any) {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    execute();
+  }
+  // Shift + Enter 默认行为（换行）会自动生效
+}
+</script>
+
 <template>
-  <div class="chat-app">
+  <div class="w-full h-full relative">
     <ChatContainer
-      v-model="inputText"
+      v-model="userQuestion"
       v-model:loading="senderLoading"
-      v-model:messages="messages"
+      v-model:messages="chatMessages"
       v-model:record-id="activeRecordId"
-      :records="records"
-      :theme-mode="themeMode"
+      :records="chatRecords"
       :is-generate-loading="generateLoading"
-      :record-actions="recordActions"
+      primary-color="#46139b"
+      :show-workspace="showWorkspace"
+      :markdown-class-name="`prose ${themeMode === 'dark' ? 'prose-invert' : ''}`"
+      :has-sender-tools="true"
+      uuid="openai"
       has-theme-mode
-      has-thinking
-      :markdown-class-name="themeMode === 'dark' ? 'prose-invert' : 'prose'"
+      :theme-mode="themeMode"
+      :input-height="180"
+      :default-input-height="80"
+      :record-actions="chatRecordActions"
+      :bubble-ext-events="bubbleEventActions"
       @send="handleSend"
       @cancel="handleCancel"
       @change-record="handleChangeRecord"
+      @clear="handleCreateRecord"
+      @close-workspace="showWorkspace = false"
       @bubble-event="handleBubbleEvent"
-      @change-theme="(mode) => (themeMode = mode)"
+      @change-theme="changeThemeMode"
     >
-      <!-- 自定义空状态 -->
-      <template #empty>
-        <div class="empty-state">
-          <div class="welcome-title">AI 助手</div>
-          <div class="welcome-desc">你好！有什么可以帮助你的吗？</div>
+      <template #logo>
+        <div class="mt-2 mb-3">
+          <img src="./logo.avif" alt="logo" style="width: 7.5rem; height: 1.1rem" />
         </div>
       </template>
 
-      <!-- 自定义 Logo -->
-      <template #logo>
-        <div class="brand-logo">
-          <IconRender icon="material-symbols:chat" />
-          <span>AI 对话</span>
+      <template #header-logo>
+        <div class="mx-2">
+          <img src="./logo.avif" alt="header-logo" style="width: 8.8rem; height: 1.3rem" />
         </div>
       </template>
+
+      <template #send-button="{ state, execute }">
+        <Button
+          size="small"
+          :disabled="!state.inputText && !state.loading"
+          rounded
+          :icon="state.loading ? 'pi pi-stop' : 'pi pi-send'"
+          :aria-label="state.loading ? 'Cancel' : 'Send'"
+          @click="execute"
+        />
+      </template>
+
+      <template #think-button="{ state, execute }">
+        <Button
+          size="small"
+          :severity="state.enableThink ? undefined : 'secondary'"
+          variant="outlined"
+          icon="pi pi-lightbulb"
+          rounded
+          label="深度思考"
+          :style="
+            state.enableThink
+              ? {
+                  background: 'rgba(var(--kl-chat-primary-rgb), 0.1)',
+                  height: '2rem'
+                }
+              : {
+                  height: '2rem'
+                }
+          "
+          @click="execute"
+        ></Button>
+      </template>
+
+      <template #sender-textarea="{ height, execute }">
+        <Textarea
+          v-model="userQuestion"
+          class="w-full"
+          :style="{
+            height: height + 'px',
+            resize: 'none',
+            outline: 'none',
+            border: 'none',
+            boxShadow: 'none',
+            '--p-textarea-padding-x': '0.3rem'
+          }"
+          @keydown="handleKeydown($event, execute)"
+        ></Textarea>
+      </template>
+
+      <template #empty>
+        <div class="flex items-center justify-center flex-col">
+          <img src="./logo.avif" alt="header-logo" style="width: 10rem" />
+          <div class="p-4 text-center text-surface-600">
+            本工程基于硅基流动API进行开发，提供智能对话服务，支持多种模型选择与个性化配置。
+          </div>
+        </div>
+      </template>
+
+      <template #new-chat-button="{ execute, disabled }">
+        <Button
+          label="新建对话"
+          icon="pi pi-plus"
+          class="w-full"
+          rounded
+          :disabled="disabled"
+          style="height: 2.5rem"
+          @click="execute"
+        ></Button>
+      </template>
+
+      <template #sender-tools>
+        <div class="h-9 w-full flex items-center gap-2 px-3">
+          <div>
+            <!-- 模型选择 -->
+            <Select
+              v-model="chatModel"
+              :options="availableModels"
+              option-label="label"
+              option-value="value"
+              size="small"
+              filter
+              placeholder="选择模型"
+              style="border-radius: 0.9rem"
+              :loading="isLoadingModels"
+              :disabled="senderLoading"
+              overlay-class="text-sm small-dropdown"
+              @change="changeModel($event.value)"
+            />
+          </div>
+
+          <div class="ml-auto">
+            <!-- 提示词管理 -->
+            <Button
+              v-if="activeRecordId"
+              icon="pi pi-book"
+              class="mr-3"
+              size="small"
+              rounded
+              :variant="showEditPromptDialog ? undefined : 'outlined'"
+              @click="() => handleShowEditPrompt()"
+            ></Button>
+            <Button
+              v-if="!isNewRecord"
+              icon="pi pi-sitemap"
+              size="small"
+              rounded
+              :variant="showWorkspace ? undefined : 'outlined'"
+              @click="changeShowWorkspace"
+            />
+          </div>
+        </div>
+      </template>
+
+      <template #bubble-event="{ data }">
+        <div class="flex gap-3 ml-auto items-center" v-if="data.role === 'assistant'">
+          <div class="chat-bubble__event-item" @click="handleBubbleEvent('delete', data)">
+            <i class="pi pi-trash" style="font-size: 0.95rem"></i>
+          </div>
+          <div class="chat-bubble__event-item" @click="handleBubbleEvent('edit', data)">
+            <i class="pi pi-pencil" style="font-size: 0.95rem"></i>
+          </div>
+        </div>
+      </template>
+
+      <template #workspace="{ record: activeRecord }">
+        <div class="p-4 h-full overflow-auto">
+          <div v-if="activeRecord" class="space-y-4">
+            <div class="border-b border-gray-300 pb-4">
+              <h3 class="text-lg font-semibold mb-2">会话信息</h3>
+            </div>
+
+            <div class="space-y-3">
+              <div>
+                <label class="text-sm font-medium text-surface-600">会话名称</label>
+                <p class="mt-1 text-surface-900">{{ activeRecord.name }}</p>
+              </div>
+
+              <div>
+                <label class="text-sm font-medium text-surface-600">创建时间</label>
+                <p class="mt-1 text-surface-900">{{ activeRecord.createTime }}</p>
+              </div>
+
+              <div>
+                <label class="text-sm font-medium text-surface-600">会话ID</label>
+                <p class="mt-1 text-surface-900 text-xs font-mono">{{ activeRecord.id }}</p>
+              </div>
+
+              <div>
+                <label class="text-sm font-medium text-surface-600">消息数量</label>
+                <p class="mt-1 text-surface-900">{{ chatMessages.length }} 条消息</p>
+              </div>
+
+              <div v-if="activeRecord.extraData">
+                <label class="text-sm font-medium text-surface-600">首条消息</label>
+                <p class="mt-1 text-surface-900 text-sm">{{ activeRecord.content }}</p>
+              </div>
+            </div>
+
+            <div class="border-t border-gray-300 pt-4 mt-4">
+              <h4 class="text-sm font-semibold mb-2">会话统计</h4>
+              <div class="grid grid-cols-2 gap-3">
+                <div class="bg-surface-50 p-3 rounded border border-gray-300">
+                  <div class="text-xs text-surface-600">用户消息</div>
+                  <div class="text-lg font-semibold">
+                    {{ chatMessages.filter((m) => m.role === 'user').length }}
+                  </div>
+                </div>
+                <div class="bg-surface-50 p-3 rounded border border-gray-300">
+                  <div class="text-xs text-surface-600">AI回复</div>
+                  <div class="text-lg font-semibold">
+                    {{ chatMessages.filter((m) => m.role === 'assistant').length }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div v-else class="flex items-center justify-center h-full text-surface-500">
+            <div class="text-center">
+              <i class="pi pi-inbox text-4xl mb-3"></i>
+              <p>选择一个会话查看详情</p>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <template #sender-footer-tools>
+        <Button
+          size="small"
+          rounded
+          :icon="'pi pi-microphone'"
+          :severity="isRecording ? 'danger' : 'secondary'"
+          @click="toggleSpeech"
+        />
+      </template>
     </ChatContainer>
+
+    <Dialog
+      v-if="editRecord"
+      v-model:visible="showEditNameDialog"
+      header="编辑会话名称"
+      :modal="true"
+      :closable="true"
+      :dismissable-mask="true"
+      :style="{ width: '400px' }"
+    >
+      <div class="flex flex-col gap-4">
+        <div class="flex flex-col gap-2">
+          <label class="font-semibold">新名称</label>
+          <Textarea
+            v-model="editRecord.name"
+            rows="2"
+            class="w-full"
+            placeholder="输入新的会话名称"
+          />
+        </div>
+        <div class="flex justify-end gap-2 mt-4">
+          <Button
+            label="取消"
+            icon="pi pi-times"
+            severity="secondary"
+            @click="showEditNameDialog = false"
+          />
+          <Button
+            label="保存"
+            icon="pi pi-save"
+            @click="
+              updateRecordName(editRecord, editRecord.name);
+              showEditNameDialog = false;
+            "
+          />
+        </div>
+      </div>
+    </Dialog>
+
+    <!-- 消息详情弹窗 -->
+    <Dialog
+      v-if="messageDetail"
+      v-model:visible="showMessageDetailDialog"
+      header="消息详情"
+      :modal="true"
+      :closable="true"
+      :dismissable-mask="true"
+      :style="{ width: '500px' }"
+    >
+      <div class="flex flex-col gap-3">
+        <div>
+          <label class="text-sm font-medium text-surface-600">消息ID</label>
+          <div
+            class="mt-1 p-2 bg-surface-50 rounded text-xs font-mono break-all border border-surface-200"
+          >
+            {{ messageDetail.id }}
+          </div>
+        </div>
+        <div>
+          <label class="text-sm font-medium text-surface-600">角色</label>
+          <div class="mt-1">
+            <span
+              :class="{
+                'bg-blue-100 text-blue-700': messageDetail.role === 'user',
+                'bg-purple-100 text-purple-700': messageDetail.role === 'assistant'
+              }"
+              class="px-2 py-1 rounded text-xs font-medium"
+            >
+              {{ messageDetail.role }}
+            </span>
+          </div>
+        </div>
+        <div>
+          <label class="text-sm font-medium text-surface-600">发送时间</label>
+          <div class="mt-1 text-sm text-surface-900">
+            {{ new Date(messageDetail.timestamp).toLocaleString() }}
+          </div>
+        </div>
+        <div>
+          <label class="text-sm font-medium text-surface-600">内容统计</label>
+          <div class="mt-1 text-sm text-surface-900">{{ messageDetail.content.length }} 字符</div>
+        </div>
+        <div v-if="messageDetail.extraData && Object.keys(messageDetail.extraData).length > 0">
+          <label class="text-sm font-medium text-surface-600">元数据</label>
+          <pre
+            class="mt-1 text-xs bg-surface-50 p-2 rounded overflow-auto border border-surface-200 max-h-40"
+            >{{ JSON.stringify(messageDetail.extraData, null, 2) }}</pre
+          >
+        </div>
+      </div>
+    </Dialog>
+
+    <!-- 编辑消息弹窗 -->
+    <Dialog
+      v-if="editMessage"
+      v-model:visible="showEditMessageDialog"
+      header="编辑消息内容"
+      :modal="true"
+      :closable="true"
+      :dismissable-mask="true"
+      :style="{ width: '600px' }"
+    >
+      <div class="flex flex-col gap-4">
+        <div class="flex flex-col gap-2">
+          <label class="font-semibold text-sm">消息内容</label>
+          <Textarea
+            v-model="tempEditContent"
+            rows="10"
+            class="w-full font-mono text-sm leading-relaxed"
+            style="resize: vertical; min-height: 200px"
+          />
+        </div>
+        <div class="flex justify-end gap-2">
+          <Button
+            label="取消"
+            icon="pi pi-times"
+            severity="secondary"
+            @click="showEditMessageDialog = false"
+          />
+          <Button
+            label="保存"
+            icon="pi pi-save"
+            @click="
+              handleEditMessageContent(tempEditContent);
+              showEditMessageDialog = false;
+            "
+          />
+        </div>
+      </div>
+    </Dialog>
+
+    <!-- 编辑提示词弹窗 -->
+    <Dialog
+      v-model:visible="showEditPromptDialog"
+      modal
+      header="设置提示词"
+      :style="{ width: '50rem' }"
+    >
+      <div class="flex flex-col gap-4">
+        <label for="prompt" class="font-semibold text-lg">系统提示词</label>
+        <Textarea
+          id="prompt"
+          v-model="promptContent"
+          rows="10"
+          placeholder="请输入系统提示词，这将作为 System Message 发送给模型..."
+          class="w-full"
+        />
+      </div>
+      <template #footer>
+        <Button label="取消" text severity="secondary" @click="showEditPromptDialog = false" />
+        <Button
+          label="保存"
+          @click="
+            () => {
+              if (editPromptRecord) {
+                updateRecordPrompt(editPromptRecord, promptContent);
+              }
+              showEditPromptDialog = false;
+            }
+          "
+        />
+      </template>
+    </Dialog>
+    <Toast />
+    <ConfirmDialog />
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, onUnmounted } from 'vue';
-import {
-  ChatContainer,
-  type BubbleEvent,
-  type ChatMessage,
-  type ChatRecord,
-  type ChatRecordAction
-} from '@kernelift/ai-chat';
-import '@kernelift/ai-chat/style.css';
-import { useStorage } from '@vueuse/core';
-
-// 状态管理
-const inputText = ref('');
-const messages = ref<ChatMessage[]>([]);
-const records = useStorage<ChatRecord[]>('chat-records', []);
-const activeRecordId = ref<string | null>(null);
-const senderLoading = ref(false);
-const generateLoading = ref(false);
-const themeMode = ref<'light' | 'dark'>('light');
-
-// 记录操作
-const recordActions: ChatRecordAction[] = [
-  {
-    id: 'edit',
-    name: '编辑',
-    icon: 'edit',
-    action: (record) => {
-      console.log('编辑记录:', record);
-    }
-  },
-  {
-    id: 'delete',
-    name: '删除',
-    icon: 'delete',
-    action: (record) => {
-      records.value = records.value.filter((r) => r.id !== record.id);
-    }
-  }
-];
-
-// 发送消息（包含记录创建逻辑）
-const handleSend = async (
-  text: string,
-  enableThink?: boolean,
-  enableNet?: boolean,
-  needCreateRecord?: boolean
-) => {
-  inputText.value = '';
-
-  // 添加用户消息
-  messages.value.push({
-    id: Date.now().toString(),
-    role: 'user',
-    content: text,
-    timestamp: Date.now(),
-    isThinking: enableThink
-  });
-
-  // 如果需要创建新记录（当前没有激活的记录）
-  if (needCreateRecord) {
-    const newRecord: ChatRecord = {
-      id: Date.now().toString(),
-      name: text.slice(0, 30) + (text.length > 30 ? '...' : ''),
-      content: text,
-      type: 'text',
-      createTime: new Date().toLocaleDateString(),
-      userId: 'current-user',
-      extraData: { messages: messages.value }
-    };
-
-    records.value.unshift(newRecord);
-    activeRecordId.value = newRecord.id;
-  }
-
-  senderLoading.value = true;
-  generateLoading.value = true;
-
-  try {
-    // 模拟 AI 响应
-    await simulateAIResponse(text, enableThink);
-  } catch (error) {
-    console.error('发送失败:', error);
-  } finally {
-    senderLoading.value = false;
-    generateLoading.value = false;
-  }
-};
-
-// 模拟 AI 响应
-const simulateAIResponse = async (text: string, enableThink?: boolean) => {
-  const responseId = Date.now().toString();
-
-  messages.value.push({
-    id: responseId,
-    role: 'assistant',
-    content: '',
-    timestamp: Date.now(),
-    loading: true,
-    isThinking: enableThink
-  });
-
-  const targetMessage = messages.value.find((m) => m.id === responseId)!;
-
-  // 模拟思考过程
-  if (enableThink) {
-    targetMessage.thoughtProcess = '正在分析用户问题...\n';
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    targetMessage.thoughtProcess += '整理相关信息...\n';
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    targetMessage.thoughtProcess += '生成回答...\n';
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    targetMessage.isThinking = false;
-  }
-
-  // 模拟流式响应
-  const response = `这是对"${text}"的回答。`;
-  for (let i = 0; i < response.length; i++) {
-    targetMessage.content += response[i];
-    await new Promise((resolve) => setTimeout(resolve, 50));
-  }
-
-  targetMessage.loading = false;
-};
-
-// 取消生成
-const handleCancel = () => {
-  generateLoading.value = false;
-  senderLoading.value = false;
-
-  const lastMessage = messages.value[messages.value.length - 1];
-  if (lastMessage?.loading) {
-    lastMessage.loading = false;
-    lastMessage.isTerminated = true;
-  }
-};
-
-// 处理气泡事件
-const handleBubbleEvent = (event: BubbleEvent, data: ChatMessage) => {
-  switch (event) {
-    case 'like':
-      data.isLiked = !data.isLiked;
-      data.isDisliked = false;
-      break;
-    case 'dislike':
-      data.isDisliked = !data.isDisliked;
-      data.isLiked = false;
-      break;
-    case 'copy':
-      navigator.clipboard.writeText(data.content);
-      break;
-    case 'bookmark':
-      data.isBookmarked = !data.isBookmarked;
-      break;
-  }
-};
-
-// 注意：记录创建逻辑已集成到 handleSend 函数中
-// 当 needCreateRecord 为 true 时，在发送消息的同时创建新记录
-
-// 切换记录
-const handleChangeRecord = (record?: ChatRecord) => {
-  if (record) {
-    messages.value = record.extraData?.messages || [];
-    activeRecordId.value = record.id;
-  } else {
-    messages.value = [];
-    activeRecordId.value = null;
-  }
-};
-</script>
-
-<style scoped>
-.chat-app {
-  height: 100vh;
-  padding: 20px;
-  background: #f5f5f5;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 60px 20px;
-}
-
-.welcome-title {
-  font-size: 32px;
-  font-weight: bold;
-  margin-bottom: 16px;
-  color: var(--kl-chat-primary-color);
-}
-
-.welcome-desc {
-  font-size: 16px;
-  color: var(--kl-note-color);
-  line-height: 1.6;
-}
-
-.brand-logo {
+<style lang="scss" scoped>
+.chat-bubble__event-item {
+  padding: 0.25rem;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  // width: 1.625rem;
+  // height: 1.625rem;
   display: flex;
+  justify-content: center;
   align-items: center;
-  gap: 8px;
-  font-size: 18px;
-  font-weight: bold;
+
+  &:active {
+    color: #6b7280; // gray-500
+    background-color: rgba(var(--kl-chat-primary-rgb), 0.13);
+  }
+
+  // 只有支持悬停的设备才应用悬停效果
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      color: #6b7280; // gray-500
+      background-color: rgba(var(--kl-chat-primary-rgb), 0.13);
+    }
+  }
 }
 </style>
+
+<style>
+.small-dropdown {
+  border-radius: 1rem !important;
+  overflow: hidden;
+}
+
+.small-dropdown .p-inputtext {
+  padding-block: 0.3rem; /* 调整内边距以适应较小的字体 */
+}
+</style>
+```
+
+### hook逻辑调用
+
+```ts
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import type {
+  BubbleEventAction,
+  ChatMessage,
+  ChatRecord,
+  ChatRecordAction
+} from '@kernelift/ai-chat';
+import { formatDate, useAsyncState, useStorage } from '@vueuse/core';
+import { useConfirm } from 'primevue/useconfirm';
+import { useToast } from 'primevue/usetoast';
+import { OpenAI } from 'openai/client';
+import type { ChatCompletionCreateParamsStreaming } from 'openai/resources/chat/completions/completions.mjs';
+import { computed, onUnmounted, ref, shallowRef } from 'vue';
+import { getModelList } from './api';
+
+interface ChatError {
+  message: string;
+  code?: string;
+  timestamp: number;
+}
+
+interface ReasoningDelta {
+  reasoning_content?: string;
+}
+
+export const useChat = (options: {
+  apiKey: string;
+  baseURL?: string;
+  model?: string;
+  uuid?: string;
+}) => {
+  const { apiKey, baseURL, model, uuid } = options;
+  // 当前显示的消息列表
+  const chatMessages = ref<ChatMessage[]>([]);
+  // 所有消息记录
+  const chatRecords = useStorage<ChatRecord[]>(`${uuid}-records`, []);
+  // 显示工作区
+  const showWorkspace = ref(false);
+  // 发送中
+  const senderLoading = ref(false);
+  // 生成中
+  const generateLoading = ref(false);
+  // 新记录Id
+  const newRecordId = ref<string | null>(null);
+  // 当前激活的记录
+  const activeRecordId = ref<string | null>(null);
+  // 错误状态
+  const lastError = ref<ChatError | null>(null);
+
+  const toast = useToast();
+  const confirm = useConfirm();
+
+  const isNewRecord = computed(() => {
+    return !!newRecordId.value && activeRecordId.value === null;
+  });
+
+  // 流式传输
+  const streamMode = ref<boolean>(true);
+  // 输入问题
+  const userQuestion = ref('');
+  // 聊天模型
+  const chatModel = ref(model || 'deepseek-ai/DeepSeek-V3.1-Terminus');
+  // 主题模式
+  const themeMode = ref<'light' | 'dark'>('light');
+
+  /**
+   * @description 切换主题模式
+   * @param mode
+   */
+  function changeThemeMode() {
+    themeMode.value = themeMode.value === 'light' ? 'dark' : 'light';
+  }
+
+  /**
+   * @description 切换模型
+   * @param newModel
+   */
+  function changeModel(newModel: string) {
+    chatModel.value = newModel;
+  }
+
+  /**
+   * @description 切换工作区显示状态
+   */
+  function changeShowWorkspace() {
+    showWorkspace.value = !showWorkspace.value;
+  }
+
+  /**
+   * @description 切换流式传输模式
+   * @param isStream
+   */
+  function changeStreamMode(isStream: boolean) {
+    streamMode.value = isStream;
+  }
+
+  const client = new OpenAI({
+    apiKey: apiKey,
+    baseURL: baseURL,
+    // 危险，此处仅作为示范使用
+    dangerouslyAllowBrowser: true
+  });
+
+  /**
+   * @description 创建错误消息
+   */
+  function createErrorMessage(error: unknown): ChatError {
+    let message = '请求失败，请稍后重试';
+    let code: string | undefined;
+
+    if (error instanceof Error) {
+      message = error.message;
+      if ('code' in error) {
+        code = String(error.code);
+      }
+    } else if (typeof error === 'string') {
+      message = error;
+    }
+
+    // Handle specific error types
+    if (message.includes('abort')) {
+      message = '请求已取消';
+      code = 'ABORTED';
+    } else if (message.includes('network')) {
+      message = '网络连接失败，请检查网络设置';
+      code = 'NETWORK_ERROR';
+    } else if (message.includes('timeout')) {
+      message = '请求超时，请稍后重试';
+      code = 'TIMEOUT';
+    } else if (message.includes('401')) {
+      message = 'API密钥无效，请检查配置';
+      code = 'UNAUTHORIZED';
+    } else if (message.includes('429')) {
+      message = '请求过于频繁，请稍后再试';
+      code = 'RATE_LIMIT';
+    }
+
+    return {
+      message,
+      code,
+      timestamp: Date.now()
+    };
+  }
+
+  /**
+   * @description 添加错误消息到聊天记录
+   */
+  function addErrorMessage(error: ChatError) {
+    const lastMessage = chatMessages.value[chatMessages.value.length - 1];
+    if (lastMessage && lastMessage.role === 'assistant') {
+      lastMessage.error = error.message;
+      lastMessage.loading = false;
+    } else {
+      chatMessages.value.push({
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: `<span style="color: red;">${error.message}</span>`,
+        timestamp: Date.now(),
+        error: error.message,
+        isThinking: false
+      });
+    }
+    lastError.value = error;
+  }
+
+  // 创建 AbortController
+  const controller = shallowRef(new AbortController());
+
+  function getMessagesWithPrompt() {
+    const messages = chatMessages.value.map((item) => ({
+      role: item.role,
+      content: item.content
+    }));
+
+    if (activeRecordId.value) {
+      const record = chatRecords.value.find((r) => r.id === activeRecordId.value);
+      if (record && record.extraData?.prompt) {
+        messages.unshift({
+          role: 'system',
+          content: record.extraData.prompt
+        });
+      }
+    }
+    return messages;
+  }
+
+  /**
+   * @description 发送消息
+   * @param value
+   * @param enableThink
+   * @param enableNet
+   * @param needCreateRecord
+   */
+  async function handleSend(
+    value: string,
+    enableThink?: boolean,
+    enableNet?: boolean,
+    needCreateRecord?: boolean
+  ) {
+    // 0. 清除之前的错误状态
+    lastError.value = null;
+
+    // 1. 清空输入框
+    userQuestion.value = '';
+    // 2. 添加用户输入记录
+    chatMessages.value.push({
+      id: Date.now().toString(),
+      role: 'user',
+      content: value,
+      timestamp: Date.now(),
+      isThinking: enableThink,
+      extraData: {
+        question: value
+      }
+    });
+
+    // 3. 如果需要创建记录，立即创建
+    if (needCreateRecord) {
+      const recordId = newRecordId.value || 'record-' + Date.now().toString();
+      newRecordId.value = null;
+      chatRecords.value.push({
+        id: recordId,
+        name: value.slice(0, 30) + (value.length > 30 ? '...' : ''),
+        content: value,
+        type: 'chat',
+        createTime: formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss'),
+        userId: uuid || 'default',
+        extraData: {
+          messages: chatMessages.value
+        }
+      });
+      activeRecordId.value = recordId;
+    }
+
+    // 4. 添加机器人输入记录
+    senderLoading.value = true;
+    generateLoading.value = true;
+    if (streamMode.value) {
+      try {
+        const stream = await client.chat.completions.create(
+          {
+            model: chatModel.value,
+            messages: getMessagesWithPrompt() as any,
+            stream: true,
+            enable_thinking: !!enableThink
+          } as ChatCompletionCreateParamsStreaming,
+          {
+            signal: controller.value.signal
+          }
+        );
+        // 5. 载入响应数据，并关闭生成加载
+        generateLoading.value = false;
+
+        const targetId = Date.now().toString();
+        chatMessages.value.push({
+          id: targetId,
+          role: 'assistant',
+          content: '',
+          timestamp: Date.now(),
+          isThinking: false,
+          extraData: {
+            model: chatModel.value,
+            userQuestion: value
+          }
+        });
+        const targetMessage = chatMessages.value.find((item) => item.id === targetId)!;
+        for await (const chunk of stream) {
+          targetMessage.loading = true;
+          const delta = chunk.choices[0]?.delta as ReasoningDelta | undefined;
+
+          if (
+            enableThink &&
+            delta?.reasoning_content &&
+            targetMessage.content.length === 0 &&
+            !chunk.choices[0]?.delta.content
+          ) {
+            if (!targetMessage.thoughtProcess) {
+              targetMessage.thoughtProcess = '';
+            }
+            targetMessage.isThinking = true;
+            targetMessage.thoughtProcess += delta.reasoning_content || '';
+          } else {
+            targetMessage.isThinking = false;
+          }
+          targetMessage.content += chunk.choices[0]?.delta.content || '';
+          targetMessage.timestamp = Date.now();
+        }
+        targetMessage.loading = false;
+      } catch (error: unknown) {
+        const chatError = createErrorMessage(error);
+        const targetMessage = chatMessages.value[chatMessages.value.length - 1];
+
+        if (targetMessage && targetMessage.role === 'assistant') {
+          targetMessage.loading = false;
+          targetMessage.timestamp = Date.now();
+          targetMessage.error = chatError.message;
+        } else {
+          addErrorMessage(chatError);
+        }
+
+        console.error('[AI Chat] Stream request failed:', error);
+      } finally {
+        senderLoading.value = false;
+      }
+    } else {
+      try {
+        const response = await client.chat.completions.create(
+          {
+            model: chatModel.value,
+            messages: getMessagesWithPrompt() as any,
+            stream: false
+          },
+          {
+            signal: controller.value.signal
+          }
+        );
+
+        chatMessages.value.push({
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: response.choices[0]?.message.content || '请求失败，请稍后重试',
+          timestamp: Date.now(),
+          isThinking: false,
+          extraData: {
+            model: chatModel.value,
+            userQuestion: value
+          }
+        });
+      } catch (error: unknown) {
+        const chatError = createErrorMessage(error);
+        addErrorMessage(chatError);
+        console.error('[AI Chat] Non-stream request failed:', error);
+      } finally {
+        // 4. 载入响应数据，并关闭生成加载
+        senderLoading.value = false;
+        generateLoading.value = false;
+      }
+    }
+  }
+
+  /**
+   * @description 取消当前请求
+   */
+  function handleCancel() {
+    // 中止当前请求
+    controller.value.abort();
+
+    // 创建新的控制器供下次使用
+    controller.value = new AbortController();
+
+    // 如果正在生成，标记最后一条消息为已取消
+    if (generateLoading.value || senderLoading.value) {
+      const lastMessage = chatMessages.value[chatMessages.value.length - 1];
+      if (lastMessage && lastMessage.role === 'assistant') {
+        lastMessage.loading = false;
+        // 如果消息内容为空，添加取消提示
+        if (!lastMessage.content && !lastMessage.error) {
+          lastMessage.error = '生成已取消';
+        }
+        lastMessage.timestamp = Date.now();
+        lastMessage.content = '生成已取消，请重试。';
+      }
+    }
+
+    // 重置加载状态
+    generateLoading.value = false;
+    senderLoading.value = false;
+
+    console.log('[AI Chat] Request cancelled by user');
+  }
+
+  onUnmounted(() => {
+    controller.value.abort();
+  });
+
+  /**
+   * @description 重试最后一条失败的消息
+   */
+  function handleRetry() {
+    if (chatMessages.value.length < 2) return;
+
+    const lastAssistantMsg = chatMessages.value[chatMessages.value.length - 1];
+    const lastUserMsg = chatMessages.value[chatMessages.value.length - 2];
+
+    if (lastAssistantMsg?.error && lastUserMsg?.role === 'user') {
+      // 移除错误的助手消息
+      chatMessages.value.pop();
+      // 重新发送用户消息
+      const userContent = lastUserMsg.content;
+      const isThinking = lastUserMsg.isThinking;
+      handleSend(userContent, isThinking, false, false);
+    }
+  }
+
+  /**
+   * @description 处理记录变更
+   * @param record
+   */
+  function handleChangeRecord(record?: ChatRecord) {
+    if (record) {
+      activeRecordId.value = record?.id || null;
+      newRecordId.value = null;
+    }
+    chatMessages.value = record?.extraData?.messages || [];
+  }
+
+  function handleCreateRecord() {
+    chatMessages.value = [];
+    newRecordId.value = 'record-' + Date.now().toString();
+    activeRecordId.value = null;
+  }
+  handleCreateRecord();
+
+  const { state: availableModels, isLoading: isLoadingModels } = useAsyncState(
+    async () => {
+      const response = await getModelList();
+      return response.data.data.map((item) => ({
+        label: item.id,
+        value: item.id
+      }));
+    },
+    [],
+    {
+      immediate: true
+    }
+  );
+
+  const showEditNameDialog = ref(false);
+  const editRecord = ref<ChatRecord | null>(null);
+
+  const showEditPromptDialog = ref(false);
+  const promptContent = ref('');
+  const editPromptRecord = ref<ChatRecord | null>(null);
+
+  function handleShowEditPrompt(record?: ChatRecord) {
+    if (record) {
+      editPromptRecord.value = record;
+      promptContent.value = record.extraData?.prompt || '';
+      showEditPromptDialog.value = true;
+    } else {
+      const activeRecord = chatRecords.value.find((item) => item.id === activeRecordId.value);
+      if (activeRecord) {
+        editPromptRecord.value = activeRecord;
+        promptContent.value = activeRecord.extraData?.prompt || '';
+        showEditPromptDialog.value = true;
+      }
+    }
+  }
+
+  const chatRecordActions: ChatRecordAction[] = [
+    {
+      key: 'prompt',
+      label: '提示词',
+      icon: 'pi pi-book text-sm',
+      handler: (record: ChatRecord) => {
+        handleShowEditPrompt(record);
+      }
+    },
+    {
+      key: 'edit',
+      label: '编辑名称',
+      icon: 'pi pi-pencil text-sm',
+      handler: (record: ChatRecord) => {
+        editRecord.value = record;
+        showEditNameDialog.value = true;
+      }
+    },
+    {
+      key: 'delete',
+      label: '删除',
+      icon: 'pi pi-trash text-sm',
+      handler: (record: ChatRecord) => {
+        confirm.require({
+          message: '确定要删除这条对话记录吗？',
+          header: '确认删除',
+          icon: 'pi pi-exclamation-triangle',
+          rejectProps: {
+            label: '取消',
+            severity: 'secondary',
+            text: true
+          },
+          acceptProps: {
+            label: '删除',
+            severity: 'danger'
+          },
+          accept: () => {
+            const index = chatRecords.value.findIndex((item) => item.id === record.id);
+            if (index !== -1) {
+              chatRecords.value.splice(index, 1);
+              toast.add({
+                severity: 'success',
+                summary: '提示',
+                detail: '删除成功',
+                life: 3000
+              });
+            }
+            // 如果删除的是当前激活的记录，清空消息列表
+            if (activeRecordId.value === record.id) {
+              chatMessages.value = [];
+              activeRecordId.value = null;
+            }
+          }
+        });
+      }
+    }
+  ];
+
+  /**
+   * @description 更新记录名称
+   * @param record
+   * @param newName
+   */
+  function updateRecordName(record: ChatRecord, newName: string) {
+    const targetRecord = chatRecords.value.find((item) => item.id === record.id);
+    if (targetRecord) {
+      targetRecord.content = newName;
+    }
+  }
+
+  /**
+   * @description 更新记录提示词
+   * @param record
+   * @param prompt
+   */
+  function updateRecordPrompt(record: ChatRecord, prompt: string) {
+    const targetRecord = chatRecords.value.find((item) => item.id === record.id);
+    if (targetRecord) {
+      if (!targetRecord.extraData) {
+        targetRecord.extraData = {};
+      }
+      targetRecord.extraData.prompt = prompt;
+    }
+  }
+
+  const bubbleEventActions: BubbleEventAction[] = [
+    {
+      key: 'info',
+      icon: 'pi pi-info-circle',
+      label: '信息'
+    }
+  ];
+
+  const showMessageDetailDialog = ref(false);
+  const messageDetail = ref<ChatMessage | null>(null);
+
+  const showEditMessageDialog = ref(false);
+  const editMessage = ref<ChatMessage | null>(null);
+  function handleEditMessageContent(newContent: string) {
+    if (editMessage.value) {
+      editMessage.value.content = newContent;
+    }
+  }
+
+  function handleBubbleEvent(event: string, data: ChatMessage) {
+    switch (event) {
+      case 'like':
+        data.isLiked = !data.isLiked;
+        break;
+      case 'dislike':
+        data.isDisliked = !data.isDisliked;
+        break;
+      case 'delete':
+        confirm.require({
+          message: '确定要删除这条消息吗？',
+          header: '确认删除',
+          icon: 'pi pi-exclamation-triangle',
+          rejectProps: {
+            label: '取消',
+            severity: 'secondary',
+            text: true
+          },
+          acceptProps: {
+            label: '删除',
+            severity: 'danger'
+          },
+          accept: () => {
+            const index = chatMessages.value.findIndex((item) => item.id === data.id);
+            if (index !== -1) {
+              chatMessages.value.splice(index, 1);
+              toast.add({
+                severity: 'success',
+                summary: '提示',
+                detail: '删除成功',
+                life: 3000
+              });
+            }
+          }
+        });
+        break;
+      case 'terminate':
+        handleCancel();
+        break;
+      case 'reload':
+        userQuestion.value = data.extraData?.question || '';
+        break;
+      case 'copy':
+        navigator.clipboard.writeText(data.content || '').then(() => {
+          toast.add({
+            severity: 'success',
+            summary: '提示',
+            detail: '复制成功',
+            life: 3000
+          });
+        });
+        break;
+      case 'edit':
+        editMessage.value = data;
+        showEditMessageDialog.value = true;
+        break;
+      case 'info':
+        messageDetail.value = data;
+        showMessageDetailDialog.value = true;
+        break;
+      default:
+        break;
+    }
+  }
+
+  return {
+    bubbleEventActions,
+    chatRecordActions,
+    isLoadingModels,
+    chatMessages,
+    chatRecords,
+    showWorkspace,
+    senderLoading,
+    generateLoading,
+    activeRecordId,
+    streamMode,
+    userQuestion,
+    lastError,
+    themeMode,
+    handleCreateRecord,
+    isNewRecord,
+    chatModel,
+    availableModels,
+    changeThemeMode,
+    changeModel,
+    handleSend,
+    handleCancel,
+    handleRetry,
+    handleChangeRecord,
+    changeShowWorkspace,
+    changeStreamMode,
+
+    showEditNameDialog,
+    editRecord,
+    updateRecordName,
+
+    showEditPromptDialog,
+    editPromptRecord,
+    promptContent,
+    updateRecordPrompt,
+    handleShowEditPrompt,
+
+    handleBubbleEvent,
+    showMessageDetailDialog,
+    messageDetail,
+    showEditMessageDialog,
+    editMessage,
+    handleEditMessageContent
+  };
+};
 ```
 
 ## 📖 API 文档
@@ -1109,401 +2107,15 @@ const handleChangeRecord = (record?: ChatRecord) => {
 }
 ```
 
-## 使用示例
-
-### 完整聊天应用
-
-```vue
-<script setup lang="ts">
-import {
-  ChatContainer,
-  type BubbleEvent,
-  type ChatMessage,
-  type ChatRecord,
-  type ChatRecordAction
-} from '@kernelift/ai-chat';
-import '@kernelift/ai-chat/style.css';
-import OpenAI from 'openai';
-import { useStorage } from '@vueuse/core';
-import type { ChatCompletionCreateParamsStreaming } from 'openai/resources';
-import { onUnmounted, ref, shallowRef } from 'vue';
-
-// 当前显示的消息列表
-const demoMessages = ref<ChatMessage[]>([]);
-// 所有消息记录
-const demoRecords = useStorage<ChatRecord[]>('demo-records', []);
-// 显示工作区
-const showWorkspace = ref(false);
-// 发送中
-const senderLoading = ref(false);
-// 生成中
-const generateLoading = ref(false);
-// 当前激活的记录
-const activeRecordId = ref<string | null>(null);
-
-//
-
-// 流式传输
-const streamMode = ref<boolean>(true);
-// 输入问题
-const userQuestion = ref('');
-
-// const chatModel = ref('deepseek-ai/DeepSeek-V3.1-Terminus');
-
-const client = new OpenAI({
-  apiKey: 'sk-xxx',
-  baseURL: 'https://api.siliconflow.cn/v1',
-  // 危险，此处仅作为示范使用
-  dangerouslyAllowBrowser: true
-});
-
-// 创建 AbortController
-const controller = shallowRef(new AbortController());
-
-/**
- * @description 发送消息
- * @param value
- * @param enableThink
- * @param enableNet
- */
-async function handleSend(value: string, enableThink?: boolean) {
-  // 1. 清空输入框
-  userQuestion.value = '';
-  // 2. 添加用户输入记录
-  demoMessages.value.push({
-    id: Date.now().toString(),
-    role: 'user',
-    content: value,
-    timestamp: Date.now(),
-    isThinking: enableThink,
-    extraData: {
-      question: value
-    }
-  });
-  // 3. 添加机器人输入记录
-  senderLoading.value = true;
-  generateLoading.value = true;
-  if (streamMode.value) {
-    try {
-      const stream = await client.chat.completions.create(
-        {
-          model: 'deepseek-ai/DeepSeek-V3.1-Terminus',
-          messages: demoMessages.value.map((item) => {
-            return {
-              role: item.role,
-              content: item.content
-            };
-          }),
-          stream: true,
-          enable_thinking: !!enableThink
-        } as ChatCompletionCreateParamsStreaming,
-        {
-          signal: controller.value.signal
-        }
-      );
-      // 4. 载入响应数据，并关闭生成加载
-      generateLoading.value = false;
-
-      const targetId = Date.now().toString();
-      demoMessages.value.push({
-        id: targetId,
-        role: 'assistant',
-        content: '',
-        timestamp: Date.now(),
-        isThinking: false
-      });
-      const targetMessage = demoMessages.value.find((item) => item.id === targetId)!;
-      for await (const chunk of stream) {
-        targetMessage.loading = true;
-        if (
-          enableThink &&
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (chunk.choices[0]?.delta as any).reasoning_content &&
-          targetMessage.content.length === 0 &&
-          !chunk.choices[0]?.delta.content
-        ) {
-          if (!targetMessage.thoughtProcess) {
-            targetMessage.thoughtProcess = '';
-          }
-          targetMessage.isThinking = true;
-
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          targetMessage.thoughtProcess += (chunk.choices[0]?.delta as any).reasoning_content || '';
-        } else {
-          targetMessage.isThinking = false;
-        }
-        targetMessage.content = targetMessage.content + (chunk.choices[0]?.delta.content || '');
-        targetMessage.timestamp = Date.now();
-      }
-      targetMessage.loading = false;
-    } catch {
-      // 请求失败处理
-      // TODO
-      // ElNotification.error('请求失败，请稍后重试');
-      const targetMessage = demoMessages.value[demoMessages.value.length - 1]!;
-      targetMessage.loading = false;
-      targetMessage.timestamp = Date.now();
-      targetMessage.error = '请求失败，请稍后重试';
-    } finally {
-      senderLoading.value = false;
-    }
-  } else {
-    try {
-      const response = await client.chat.completions.create(
-        {
-          model: 'deepseek-ai/DeepSeek-V3.1-Terminus',
-          messages: demoMessages.value.map((item) => {
-            return {
-              role: item.role,
-              content: item.content
-            };
-          }),
-          stream: false
-        },
-        {
-          signal: controller.value.signal
-        }
-      );
-
-      demoMessages.value.push({
-        id: Date.now().toString(),
-        role: 'assistant',
-        content: response.choices[0]?.message.content || '请求失败，请稍后重试',
-        timestamp: Date.now(),
-        isThinking: false
-      });
-    } catch {
-      // TODO: 错误处理
-      // ElNotification.error('请求失败，请稍后重试');
-    } finally {
-      // 4. 载入响应数据，并关闭生成加载
-      senderLoading.value = false;
-      generateLoading.value = false;
-    }
-  }
-}
-
-function handleCancel() {
-  controller.value.abort();
-  controller.value = new AbortController();
-  if (generateLoading.value) {
-  }
-  generateLoading.value = false;
-  senderLoading.value = false;
-}
-
-onUnmounted(() => {
-  controller.value.abort();
-});
-
-// 记录创建逻辑已整合到 handleSend 中
-// 通过 needCreateRecord 参数判断是否需要创建新记录
-
-function handleChangeRecord(record?: ChatRecord) {
-  demoMessages.value = record?.extraData?.messages || [];
-}
-
-function handleBubbleEvent(event: BubbleEvent, data: ChatMessage) {
-  switch (event) {
-    case 'like':
-      data.isLiked = !data.isLiked;
-      break;
-    case 'dislike':
-      data.isDisliked = !data.isDisliked;
-      break;
-    case 'bookmark':
-      data.isBookmarked = !data.isBookmarked;
-      break;
-    case 'terminate':
-      data.isTerminated = true;
-      break;
-    case 'copy':
-      navigator.clipboard.writeText(data.content);
-    // TODO: 添加复制成功提示
-    // ElMessage.success('复制成功');
-  }
-}
-
-const recordButtons: ChatRecordAction[] = [
-  {
-    id: 'edit',
-    name: '编辑',
-    icon: 'edit',
-    action: () => {}
-  },
-  {
-    id: 'delete',
-    name: '删除',
-    icon: 'delete',
-    action: (record) => {
-      demoRecords.value = demoRecords.value.filter((item) => item.id !== record.id);
-    }
-  }
-];
-
-const themeMode = ref<'light' | 'dark'>('light');
-
-function handleScrollBottom() {
-  // TODO: 滚动到底部
-  console.log('滚动到底部');
-}
-</script>
-
-<template>
-  <div class="w-full h-full relative">
-    <ChatContainer
-      v-model="userQuestion"
-      v-model:loading="senderLoading"
-      v-model:messages="demoMessages"
-      v-model:record-id="activeRecordId"
-      :is-generate-loading="generateLoading"
-      :records="demoRecords"
-      :record-actions="recordButtons"
-      :show-workspace="showWorkspace"
-      :has-sender-tools="true"
-      :show-sender="true"
-      has-theme-mode
-      :markdown-class-name="themeMode === 'dark' ? 'prose-invert' : 'prose'"
-      :enable-think="true"
-      :enable-net="false"
-      :theme-mode="themeMode"
-      :input-height="80"
-      @send="handleSend"
-      @cancel="handleCancel"
-      @close-workspace="showWorkspace = false"
-      @change-record="handleChangeRecord"
-      @bubble-event="handleBubbleEvent"
-      @change-theme="(mode) => (themeMode = mode)"
-      @scroll-bottom="handleScrollBottom"
-    >
-      <template #sender-tools>
-        <div class="px-3 flex items-center h-full">
-          <div
-            class="border border-amber-600 rounded py-1 px-2 text-sm ml-auto text-amber-600 hover:brightness-125 hover:bg-amber-500/15 cursor-pointer"
-            @click="showWorkspace = !showWorkspace"
-          >
-            会话空间
-          </div>
-        </div>
-      </template>
-      <template #empty>
-        <div class="text-center">
-          <div class="italic font-bold text-3xl mb-3">AI计量助手</div>
-          <div>
-            你好！很高兴见到你！😊
-            <div>
-              有什么我可以帮助你的吗？无论是回答问题、聊天还是其他任何需要，我都很乐意为你提供帮助！
-            </div>
-          </div>
-        </div>
-      </template>
-      <template #logo>
-        <div class="text-xl mb-2 font-bold">AI计量助手</div>
-      </template>
-      <template #header-logo>
-        <div class="text-lg font-bold ml-3">AI计量助手</div>
-      </template>
-
-      <template #workspace="{ record }">
-        <div class="p-3 relative overflow-auto w-full h-full workspace-area">
-          在工作区展示记录的一些详细信息或额外内容
-          <div class="text-base mt-8 whitespace-pre-line bg-gray-200 p-3">
-            {{ record }}
-          </div>
-        </div>
-      </template>
-
-      <template #record-dropdown>
-        <div class="text-gray-300 italic absolute top-0 right-0">记录下拉菜单</div>
-      </template>
-
-      <template #bubble-header="{ data }">
-        <div v-if="data.id === '1765436189938'" class="text-gray-300 italic">气泡头部</div>
-      </template>
-      <template #bubble-footer="{ data }">
-        <div v-if="data.id === '1765436189938'" class="text-gray-300 italic">
-          气泡底部会覆盖掉操作按钮
-        </div>
-      </template>
-      <template #bubble-event="{ data }">
-        <div v-if="data.id === '1765436289340'" class="ml-auto">可以有很多其他按钮</div>
-      </template>
-      <template #bubble-content-header="{ data }">
-        <div v-if="data.id === '1765436189938'" class="text-gray-300 italic">
-          我这里可以插入头部
-        </div>
-      </template>
-      <template #bubble-content-footer="{ data }">
-        <div v-if="data.id === '1765436189938'" class="text-gray-300 italic">
-          我这里可以插入底部
-        </div>
-      </template>
-
-      <template #bubble-thinking-header="{ data }">
-        <div v-if="data.id === '1765436189938'" class="text-gray-300 italic">
-          在思考区域搞点事情
-        </div>
-      </template>
-
-      <template #sender-footer-tools>
-        <div class="text-gray-300 italic">这里可以插入一些按钮元素</div>
-      </template>
-
-      <template #sender-button>
-        <div class="border border-gray-300 bg-amber-600">发送</div>
-      </template>
-    </ChatContainer>
-  </div>
-</template>
-
-<style lang="scss">
-.workspace-area {
-  --scrollbar-width: 8px;
-  --scrollbar-border-radius: 4px;
-  --scrollbar-track-color: transparent;
-  --scrollbar-thumb-color: rgba(var(--kl-chat-primary-rgb), 0.3);
-  --scrollbar-thumb-hover-color: rgba(var(--kl-chat-primary-rgb), 0.6);
-  --scrollbar-thumb-active-color: rgba(var(--kl-chat-primary-rgb), 0.8);
-
-  &::-webkit-scrollbar {
-    width: var(--scrollbar-width);
-    height: var(--scrollbar-width);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: var(--scrollbar-track-color);
-    border-radius: var(--scrollbar-border-radius);
-    margin: 2px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: var(--scrollbar-thumb-color);
-    border-radius: var(--scrollbar-border-radius);
-    transition: all 0.3s ease;
-    cursor: pointer;
-
-    &:hover {
-      background: var(--scrollbar-thumb-hover-color);
-    }
-
-    &:active {
-      background: var(--scrollbar-thumb-active-color);
-    }
-  }
-}
-</style>
-```
-
 ### Props 属性
 
 | 属性名                  | 类型                     | 默认值      | 说明                                               |
 | ----------------------- | ------------------------ | ----------- | -------------------------------------------------- |
 | `records`               | `ChatRecord[]`           | `[]`        | 聊天记录列表                                       |
 | `recordActions`         | `ChatRecordAction[]`     | `[]`        | 记录操作按钮配置                                   |
+| `bubbleExtEvents`       | `BubbleEventAction[]`    | `[]`        | 气泡扩展事件配置                                   |
 | `hasHeader`             | `boolean`                | `true`      | 是否显示头部                                       |
-| `headerHeight`          | `number`                 | `62`        | 头部高度 (px)                                      |
+| `headerHeight`          | `number`                 | `38`        | 头部高度 (px)                                      |
 | `hasThemeMode`          | `boolean`                | `false`     | 是否支持主题切换                                   |
 | `hasThinking`           | `boolean`                | `true`      | 是否支持深度思考                                   |
 | `hasNetSearch`          | `boolean`                | `false`     | 是否支持联网搜索                                   |
@@ -1520,9 +2132,14 @@ function handleScrollBottom() {
 | `themeMode`             | `'light' \| 'dark'`      | `'light'`   | 主题模式                                           |
 | `enableNet`             | `boolean`                | `undefined` | 联网搜索启用状态                                   |
 | `enableThink`           | `boolean`                | `undefined` | 深度思考启用状态                                   |
-| `inputHeight`           | `number`                 | `140`       | 输入框高度                                         |
+| `disabledCreateRecord`  | `boolean`                | `false`     | 是否禁用新建聊天记录                               |
+| `inputHeight`           | `number`                 | `140`       | 输入框最大高度 (px)                                |
+| `defaultInputHeight`    | `number`                 | `62`        | 输入框初始默认高度 (px)                            |
 | `onCopy`                | `(code: string) => void` | `undefined` | 复制代码回调                                       |
 | `i18n`                  | `Record<string, any>`    | `zhCN`      | 国际化配置                                         |
+| `autoScroll`            | `boolean`                | `true`      | 是否自动滚动到底部                                 |
+| `autoScrollPauseTime`   | `number`                 | `3000`      | 用户滚动时自动滚动暂停时间 (ms)                    |
+| `uuid`                  | `string`                 | `'default'` | 实例唯一标识，用于存储状态                         |
 | `markdownPlugins`       | `any[]`                  | `[]`        | Markdown 插件列表                                  |
 | `markdownOptions`       | `any`                    | `{}`        | Markdown 配置选项                                  |
 | `markdownRender`        | `Component`              | `MdRender`  | 自定义 markdown 渲染组件                           |
@@ -1530,58 +2147,69 @@ function handleScrollBottom() {
 
 ### v-model 双向绑定
 
-| 属性名                | 类型             | 说明             |
-| --------------------- | ---------------- | ---------------- |
-| `v-model`             | `string`         | 输入框文本       |
-| `v-model:messages`    | `ChatMessage[]`  | 消息列表         |
-| `v-model:loading`     | `boolean`        | 发送加载状态     |
-| `v-model:recordId`    | `string \| null` | 当前记录ID       |
-| `v-model:enableThink` | `boolean`        | 深度思考启用状态 |
-| `v-model:enableNet`   | `boolean`        | 联网搜索启用状态 |
+| 属性名              | 类型                  | 说明         |
+| ------------------- | --------------------- | ------------ |
+| `v-model`           | `string`              | 输入框文本   |
+| `v-model:messages`  | `ChatMessage[]`       | 消息列表     |
+| `v-model:loading`   | `boolean`             | 发送加载状态 |
+| `v-model:record-id` | `string \| undefined` | 当前记录ID   |
 
 ### Events 事件
 
-| 事件名               | 参数                                                                                     | 说明                                              |
-| -------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------- |
-| `send`               | `(text: string, enableThink?: boolean, enableNet?: boolean, needCreateRecord?: boolean)` | 发送消息，needCreateRecord 表示是否需要创建新记录 |
-| `cancel`             | -                                                                                        | 取消生成                                          |
-| `clear`              | -                                                                                        | 清空聊天                                          |
-| `change-record`      | `(record?: ChatRecord)`                                                                  | 切换记录                                          |
-| `change-collapse`    | `(collapse: boolean)`                                                                    | 折叠状态改变                                      |
-| `change-theme`       | `(theme: 'light' \| 'dark')`                                                             | 主题切换                                          |
-| `change-aside-width` | `(width: number)`                                                                        | 侧边栏宽度改变                                    |
-| `click-logo`         | -                                                                                        | 点击Logo                                          |
-| `bubble-event`       | `(event: BubbleEvent \| string, message: ChatMessage)`                                   | 气泡交互事件（内置事件 + 自定义 ext-events）      |
-| `close-workspace`    | -                                                                                        | 关闭工作区                                        |
-| `scroll-bottom`      | -                                                                                        | 滚动到底部                                        |
+| 事件名                   | 参数                                                                                     | 说明                                              |
+| ------------------------ | ---------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| `send`                   | `(text: string, enableThink?: boolean, enableNet?: boolean, needCreateRecord?: boolean)` | 发送消息，needCreateRecord 表示是否需要创建新记录 |
+| `cancel`                 | -                                                                                        | 取消生成                                          |
+| `clear`                  | -                                                                                        | 清空聊天                                          |
+| `change-record`          | `(record?: ChatRecord)`                                                                  | 切换记录                                          |
+| `change-collapse`        | `(collapse: boolean)`                                                                    | 折叠状态改变                                      |
+| `change-theme`           | `(theme: 'light' \| 'dark')`                                                             | 主题切换                                          |
+| `change-aside-width`     | `(width: number)`                                                                        | 侧边栏宽度改变                                    |
+| `change-workspace-width` | `(widthPercent: number)`                                                                 | 工作区宽度占比改变                                |
+| `click-logo`             | -                                                                                        | 点击Logo                                          |
+| `bubble-event`           | `(event: BubbleEvent \| string, message: ChatMessage)`                                   | 气泡交互事件（内置事件 + 自定义 ext-events）      |
+| `close-workspace`        | -                                                                                        | 关闭工作区                                        |
+| `scroll-bottom`          | -                                                                                        | 滚动到底部                                        |
 
 ### Slots 插槽
 
-| 插槽名                   | 参数                                                                    | 说明           |
-| ------------------------ | ----------------------------------------------------------------------- | -------------- |
-| `left-aside`             | `{ mobile: boolean }`                                                   | 左侧边栏       |
-| `aside`                  | `{ record: ChatRecord \| undefined, mobile: boolean }`                  | 主侧边栏       |
-| `logo`                   | `{ mobile: boolean }`                                                   | Logo区域       |
-| `new-chat-button`        | `{ mobile: boolean }`                                                   | 新建聊天按钮   |
-| `record-dropdown`        | `{ mobile: boolean }`                                                   | 记录下拉菜单   |
-| `header`                 | `{ record: ChatRecord \| undefined, mobile: boolean }`                  | 头部区域       |
-| `header-logo`            | `{ mobile: boolean }`                                                   | 头部Logo       |
-| `bubble-header`          | `{ data: ChatMessage, mobile: boolean }`                                | 气泡头部       |
-| `bubble-footer`          | `{ data: ChatMessage, mobile: boolean }`                                | 气泡底部       |
-| `bubble-event`           | `{ data: ChatMessage, mobile: boolean }`                                | 气泡操作区     |
-| `bubble-content-header`  | `{ data: ChatMessage, mobile: boolean }`                                | 气泡内容头部   |
-| `bubble-content-footer`  | `{ data: ChatMessage, mobile: boolean }`                                | 气泡内容底部   |
-| `bubble-thinking-header` | `{ data: ChatMessage, mobile: boolean }`                                | 思考过程头部   |
-| `bubble-loading-content` | `{ mobile: boolean }`                                                   | 加载内容       |
-| `empty`                  | `{ mobile: boolean }`                                                   | 空状态         |
-| `sender-tools`           | `{ mobile: boolean }`                                                   | 发送工具区     |
-| `sender-footer-tools`    | `{ value: string, loading: boolean, mobile: boolean }`                  | 发送器底部工具 |
-| `footer`                 | `{ mobile: boolean }`                                                   | 底部区域       |
-| `workspace`              | `{ record: ChatRecord \| undefined, mobile: boolean }`                  | 工作区         |
-| `send-button`            | `{ state: object, execute: Function, mobile: boolean }`                 | 发送按钮       |
-| `think-button`           | `{ state: object, execute: Function, mobile: boolean }`                 | 思考按钮       |
-| `net-button`             | `{ state: object, execute: Function, mobile: boolean }`                 | 联网按钮       |
-| `sender-textarea`        | `{ state: object, execute: Function, mobile: boolean, height: number }` | 输入框         |
+| 插槽名                   | 参数                                                                                                     | 说明           |
+| ------------------------ | -------------------------------------------------------------------------------------------------------- | -------------- |
+| `left-aside`             | `{ mobile: boolean }`                                                                                    | 左侧边栏       |
+| `aside`                  | `{ record: ChatRecord \| undefined, mobile: boolean }`                                                   | 主侧边栏       |
+| `record-footer`          | `{ record: ChatRecord \| undefined, mobile: boolean }`                                                   | 记录底部区域   |
+| `logo`                   | `{ mobile: boolean }`                                                                                    | Logo区域       |
+| `new-chat-button`        | `{ mobile: boolean, execute: Function, disabled: boolean }`                                              | 新建聊天按钮   |
+| `record-dropdown`        | `{ mobile: boolean }`                                                                                    | 记录下拉菜单   |
+| `header`                 | `{ record: ChatRecord \| undefined, mobile: boolean }`                                                   | 头部区域       |
+| `header-logo`            | `{ mobile: boolean }`                                                                                    | 头部Logo       |
+| `collapsed-header-extra` | `{ mobile: boolean }`                                                                                    | 折叠头部额外区 |
+| `header-extra`           | `{ mobile: boolean }`                                                                                    | 头部额外区     |
+| `bubble-header`          | `{ data: ChatMessage, mobile: boolean }`                                                                 | 气泡头部       |
+| `bubble-footer`          | `{ data: ChatMessage, mobile: boolean }`                                                                 | 气泡底部       |
+| `bubble-event`           | `{ data: ChatMessage, mobile: boolean }`                                                                 | 气泡操作区     |
+| `bubble-content-header`  | `{ data: ChatMessage, mobile: boolean }`                                                                 | 气泡内容头部   |
+| `bubble-content-footer`  | `{ data: ChatMessage, mobile: boolean }`                                                                 | 气泡内容底部   |
+| `bubble-thinking-header` | `{ data: ChatMessage, mobile: boolean }`                                                                 | 思考过程头部   |
+| `bubble-loading-content` | `{ mobile: boolean }`                                                                                    | 加载内容       |
+| `empty`                  | `{ mobile: boolean }`                                                                                    | 空状态         |
+| `sender-tools`           | `{ mobile: boolean }`                                                                                    | 发送工具区     |
+| `sender-footer-tools`    | `{ value: string, loading: boolean, enableNet: boolean, enableThink: boolean, mobile: boolean }`         | 发送器底部工具 |
+| `footer`                 | `{ mobile: boolean }`                                                                                    | 底部区域       |
+| `workspace`              | `{ record: ChatRecord \| undefined, mobile: boolean }`                                                   | 工作区         |
+| `send-button`            | `{ state: { loading: boolean, inputText: string }, execute: Function, mobile: boolean }`                 | 发送按钮       |
+| `think-button`           | `{ state: { hasThinking: boolean, enableThink: boolean }, execute: Function, mobile: boolean }`          | 思考按钮       |
+| `net-button`             | `{ state: { hasNetSearch: boolean, enableNet: boolean }, execute: Function, mobile: boolean }`           | 联网按钮       |
+| `sender-textarea`        | `{ state: { loading: boolean, inputText: string }, execute: Function, mobile: boolean, height: number }` | 输入框         |
+
+### Exposed 方法
+
+| 方法名           | 类型                        | 说明             |
+| ---------------- | --------------------------- | ---------------- |
+| `isMobile`       | `Ref<boolean>`              | 是否为移动端模式 |
+| `collapse`       | `Ref<boolean>`              | 侧边栏折叠状态   |
+| `asideWidth`     | `Ref<number>`               | 侧边栏宽度       |
+| `scrollToBottom` | `(smooth: boolean) => void` | 滚动到底部       |
 
 ### 类型定义
 
@@ -1781,9 +2409,4 @@ GPL-3.0 License
 
 ## 🤝 贡献
 
-欢迎提交 Issue 和 Pull Request！
-
----
-
-**版本**: 2.0.0  
-**更新时间**: 2024-12-25
+欢迎提交 Issue！

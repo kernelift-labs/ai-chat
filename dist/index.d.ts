@@ -20,6 +20,7 @@ declare const __VLS_component_2: DefineComponent<__VLS_PublicProps_2, {
 isMobile: Ref<boolean, boolean>;
 collapse: RemovableRef<boolean>;
 asideWidth: RemovableRef<number>;
+workspaceWidth: RemovableRef<number>;
 scrollToBottom: (smooth?: boolean) => void;
 }, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, {
 "update:modelValue": (value: string) => any;
@@ -34,6 +35,7 @@ clear: () => any;
 "change-collapse": (collapse: boolean) => any;
 "change-theme": (themeMode: "light" | "dark") => any;
 "change-aside-width": (width: number) => any;
+"change-workspace-width": (widthPercent: number) => any;
 "click-logo": () => any;
 "bubble-event": (eventName: string, data: ChatMessage) => any;
 "close-workspace": () => any;
@@ -46,6 +48,7 @@ onClear?: (() => any) | undefined;
 "onChange-collapse"?: ((collapse: boolean) => any) | undefined;
 "onChange-theme"?: ((themeMode: "light" | "dark") => any) | undefined;
 "onChange-aside-width"?: ((width: number) => any) | undefined;
+"onChange-workspace-width"?: ((widthPercent: number) => any) | undefined;
 "onClick-logo"?: (() => any) | undefined;
 "onBubble-event"?: ((eventName: string, data: ChatMessage) => any) | undefined;
 "onClose-workspace"?: (() => any) | undefined;
@@ -60,14 +63,16 @@ i18n: {
 [key: string]: any;
 };
 hasThemeMode: boolean;
+uuid: string;
+disabledCreateRecord: boolean;
+records: ChatRecord[];
 hasThinking: boolean;
 hasNetSearch: boolean;
 inputHeight: number;
-uuid: string;
-records: ChatRecord[];
 recordActions: ChatRecordAction[];
 hasHeader: boolean;
 headerHeight: number;
+defaultInputHeight: number;
 hasSenderTools: boolean;
 alwaysShowSenderTools: boolean;
 showWorkspace: boolean;
@@ -78,6 +83,8 @@ primaryColor: string;
 autoScroll: boolean;
 autoScrollPauseTime: number;
 }, {}, {}, {}, string, ComponentProvideOptions, false, {
+mainAreaRef: HTMLElement;
+chatAreaRef: HTMLDivElement;
 messagesListRef: HTMLDivElement;
 }, HTMLDivElement>;
 
@@ -127,12 +134,13 @@ declare type __VLS_Props = {
         [key: string]: any;
     };
     isMobile?: boolean;
-    extEvents?: ActionItem[];
+    extEvents?: BubbleEventAction[];
     plugins?: any[];
     options?: any;
     afterRender?: (md: any) => void;
     markdownRender?: Component;
     themeMode?: 'light' | 'dark';
+    iconColor?: string;
 };
 
 declare type __VLS_Props_2 = ChatProps;
@@ -165,6 +173,8 @@ declare type __VLS_Props_5 = {
     markdownRender?: Component;
     afterRender?: (md: any) => void;
     themeMode?: 'light' | 'dark';
+    incremental?: boolean;
+    iconColor?: string;
 };
 
 declare type __VLS_PublicProps = {
@@ -218,6 +228,8 @@ declare function __VLS_template_2(): {
                 createTime: string;
                 userId: string;
                 updateTime?: string | undefined;
+                footerLeftText?: string | undefined;
+                footerRightText?: string | undefined;
                 extraData?: {
                     [key: string]: any;
                 } | undefined;
@@ -236,6 +248,8 @@ declare function __VLS_template_2(): {
                 createTime: string;
                 userId: string;
                 updateTime?: string | undefined;
+                footerLeftText?: string | undefined;
+                footerRightText?: string | undefined;
                 extraData?: {
                     [key: string]: any;
                 } | undefined;
@@ -245,6 +259,7 @@ declare function __VLS_template_2(): {
         'new-chat-button'?(_: {
             mobile: boolean;
             execute: () => void;
+            disabled: boolean;
         }): any;
         'record-dropdown'?(_: {
             mobile: boolean;
@@ -258,6 +273,8 @@ declare function __VLS_template_2(): {
                 createTime: string;
                 userId: string;
                 updateTime?: string | undefined;
+                footerLeftText?: string | undefined;
+                footerRightText?: string | undefined;
                 extraData?: {
                     [key: string]: any;
                 } | undefined;
@@ -265,6 +282,12 @@ declare function __VLS_template_2(): {
             mobile: boolean;
         }): any;
         'header-logo'?(_: {
+            mobile: boolean;
+        }): any;
+        'collapsed-header-extra'?(_: {
+            mobile: boolean;
+        }): any;
+        'header-extra'?(_: {
             mobile: boolean;
         }): any;
         'bubble-header'?(_: {
@@ -352,6 +375,8 @@ declare function __VLS_template_2(): {
                 createTime: string;
                 userId: string;
                 updateTime?: string | undefined;
+                footerLeftText?: string | undefined;
+                footerRightText?: string | undefined;
                 extraData?: {
                     [key: string]: any;
                 } | undefined;
@@ -360,6 +385,8 @@ declare function __VLS_template_2(): {
         }): any;
     };
     refs: {
+        mainAreaRef: HTMLElement;
+        chatAreaRef: HTMLDivElement;
         messagesListRef: HTMLDivElement;
     };
     rootEl: HTMLDivElement;
@@ -447,7 +474,9 @@ declare type __VLS_WithTemplateSlots_4<T, S> = T & {
     };
 };
 
-declare interface ActionItem {
+export declare type BubbleEvent = 'like' | 'dislike' | 'bookmark' | 'terminate' | 'reload' | 'copy';
+
+export declare interface BubbleEventAction {
     key: BubbleEvent | string;
     icon: string;
     iconActive?: string;
@@ -456,8 +485,6 @@ declare interface ActionItem {
     activeColor?: string;
     iconStyle?: Record<string, string | undefined>;
 }
-
-export declare type BubbleEvent = 'like' | 'dislike' | 'bookmark' | 'terminate' | 'reload' | 'copy';
 
 declare function changeNetState(): void;
 
@@ -478,6 +505,7 @@ export declare interface ChatEvents {
     (e: 'change-collapse', collapse: boolean): void;
     (e: 'change-theme', themeMode: 'light' | 'dark'): void;
     (e: 'change-aside-width', width: number): void;
+    (e: 'change-workspace-width', widthPercent: number): void;
     (e: 'click-logo'): void;
     (e: 'bubble-event', eventName: string, data: ChatMessage): void;
     (e: 'close-workspace'): void;
@@ -573,10 +601,12 @@ export declare interface ChatProps {
     uuid?: string;
     records?: ChatRecord[];
     recordActions?: ChatRecordAction[];
+    bubbleExtEvents?: BubbleEventAction[];
     hasHeader?: boolean;
     headerHeight?: number;
     hasThemeMode?: boolean;
     inputHeight?: number;
+    defaultInputHeight?: number;
     hasThinking?: boolean;
     hasNetSearch?: boolean;
     hasSenderTools?: boolean;
@@ -592,6 +622,7 @@ export declare interface ChatProps {
     themeMode?: 'light' | 'dark';
     enableNet?: boolean;
     enableThink?: boolean;
+    disabledCreateRecord?: boolean;
     onCopy?: (code: string) => void;
     i18n?: {
         [key: string]: any;
@@ -615,18 +646,21 @@ export declare interface ChatRecord {
     createTime: string;
     userId: string;
     updateTime?: string;
+    footerLeftText?: string;
+    footerRightText?: string;
     extraData?: {
         [key: string]: any;
     };
 }
 
 export declare interface ChatRecordAction {
-    id: string;
-    name: string;
+    key: string;
+    label: string;
     icon?: string | Component;
     divided?: boolean;
-    disabled?: boolean;
-    action: (record: ChatRecord) => void;
+    disabled?: boolean | ((record: ChatRecord) => boolean);
+    show?: boolean | ((record: ChatRecord) => boolean);
+    handler: (record: ChatRecord) => void;
 }
 
 export declare const ChatSender: __VLS_WithTemplateSlots_3<typeof __VLS_component_3, __VLS_TemplateResult_3["slots"]>;
@@ -645,8 +679,14 @@ export declare interface ChatSlots {
     logo: (props: {
         mobile: boolean;
     }) => VNode[];
+    'record-footer': (props: {
+        record: ChatRecord | undefined;
+        mobile: boolean;
+    }) => VNode[];
     'new-chat-button': (props: {
         mobile: boolean;
+        execute: () => void;
+        disabled: boolean;
     }) => VNode[];
     'record-dropdown': (props: {
         mobile: boolean;
@@ -658,6 +698,12 @@ export declare interface ChatSlots {
     'header-logo': (props: {
         mobile: boolean;
     }) => VNode[];
+    'collapsed-header-extra': (props: {
+        mobile: boolean;
+    }) => VNode[];
+    'header-extra': (props: {
+        mobile: boolean;
+    }) => VNode[];
     'bubble-header': (props: {
         data: ChatMessage;
         mobile: boolean;
@@ -667,6 +713,10 @@ export declare interface ChatSlots {
         mobile: boolean;
     }) => VNode[];
     'bubble-event': (props: {
+        data: ChatMessage;
+        mobile: boolean;
+    }) => VNode[];
+    'bubble-content-header': (props: {
         data: ChatMessage;
         mobile: boolean;
     }) => VNode[];
@@ -690,6 +740,8 @@ export declare interface ChatSlots {
     'sender-footer-tools': (props: {
         value: string;
         loading: boolean;
+        enableNet: boolean;
+        enableThink: boolean;
         mobile: boolean;
     }) => VNode[];
     footer: (props: {
@@ -697,6 +749,39 @@ export declare interface ChatSlots {
     }) => VNode[];
     workspace: (props: {
         record: ChatRecord | undefined;
+        mobile: boolean;
+    }) => VNode[];
+    'send-button': (props: {
+        execute: () => void;
+        state: {
+            loading: boolean;
+            inputText: string;
+        };
+        mobile: boolean;
+    }) => VNode[];
+    'think-button': (props: {
+        execute: () => void;
+        state: {
+            hasThinking: boolean;
+            enableThink: boolean;
+        };
+        mobile: boolean;
+    }) => VNode[];
+    'net-button': (props: {
+        execute: () => void;
+        state: {
+            hasNetSearch: boolean;
+            enableNet: boolean;
+        };
+        mobile: boolean;
+    }) => VNode[];
+    'sender-textarea': (props: {
+        execute: () => void;
+        state: {
+            loading: boolean;
+            inputText: string;
+        };
+        height: number;
         mobile: boolean;
     }) => VNode[];
 }
@@ -722,6 +807,8 @@ export declare const i18nMessages: {
             loading: string;
             thinking: string;
             thinked: string;
+            darkMode: string;
+            lightMode: string;
             userMessages: string;
             noUserMessages: string;
             note: string;
@@ -748,6 +835,8 @@ export declare const i18nMessages: {
             thinking: string;
             thinked: string;
             userMessages: string;
+            darkMode: string;
+            lightMode: string;
             noUserMessages: string;
             note: string;
             empty: string;
