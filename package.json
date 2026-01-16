@@ -1,6 +1,6 @@
 {
   "name": "@kernelift/ai-chat",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "description": "kernelift 前端 AI chat 聊天框组件",
   "type": "module",
   "author": "charles-chan <charleschan2016@m.scnu.edu.cn>",
