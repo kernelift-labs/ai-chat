@@ -1,7 +1,10 @@
-# @kernelift/ai-chat
+# @gci/ai-chat
 
-[![npm version](https://badge.fury.io/js/%40kernelift%2Fai-chat.svg)](https://badge.fury.io/js/%40kernelift%2Fai-chat)
+[![npm version](https://badge.fury.io/js/%40gci%2Fai-chat.svg)](https://badge.fury.io/js/%40gci%2Fai-chat)
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](https://opensource.org/licenses/GPL-3.0)
+
+- 在线预览地址： https://gci-labs.github.io/playground/#/ai-chat
+- demo工程： https://github.com/gci-labs/playground
 
 基于 Vue 3 + TypeScript 的现代化 AI 聊天框组件，提供企业级的对话界面解决方案。无UI库绑定。
 
@@ -25,20 +28,20 @@
 
 ```bash
 # 使用 pnpm
-pnpm add @kernelift/ai-chat
+pnpm add @gci/ai-chat
 
 # 使用 npm
-npm install @kernelift/ai-chat
+npm install @gci/ai-chat
 
 # 使用 yarn
-yarn add @kernelift/ai-chat
+yarn add @gci/ai-chat
 ```
 
 ### 依赖要求
 
 - Vue 3.3+
 - TypeScript 5.0+
-- @kernelift/markdown (workspace:\*)
+- @gci/markdown (workspace:\*)
 
 ## 🚀 快速开始
 
@@ -46,7 +49,7 @@ yarn add @kernelift/ai-chat
 
 ```vue
 <template>
-  <ChatContainer
+  <AiChat
     v-model:messages="messages"
     v-model:inputText="inputText"
     v-model:loading="loading"
@@ -58,9 +61,9 @@ yarn add @kernelift/ai-chat
 
 <script setup>
 import { ref } from 'vue'
-import { ChatContainer } from '@kernelift/ai-chat'
-import '@kernelift/ai-chat/style.css'
-import type { ChatMessage, ChatRecord, BubbleEvent } from '@kernelift/ai-chat'
+import { AiChat } from '@gci/ai-chat'
+import '@gci/ai-chat/style.css'
+import type { ChatMessage, ChatRecord, BubbleEvent } from '@gci/ai-chat'
 
 const messages = ref<ChatMessage[]>([])
 const inputText = ref('')
@@ -92,7 +95,7 @@ const handleBubbleEvent = (eventName: BubbleEvent, data: ChatMessage) => {
 ### 组件层次结构
 
 ```
-ChatContainer (主容器)
+AiChat (主容器)
 ├── ChatSidebar (侧边栏)
 │   ├── Logo 区域
 │   ├── 新建聊天按钮
@@ -125,13 +128,13 @@ ChatContainer (主容器)
 
 ## 🧩 组件详解
 
-### ChatContainer - 主容器
+### AiChat - 主容器
 
 主容器组件，负责整体布局和状态管理。
 
 ```vue
 <template>
-  <ChatContainer
+  <AiChat
     v-model:messages="messages"
     v-model:inputText="inputText"
     v-model:loading="loading"
@@ -151,7 +154,7 @@ ChatContainer (主容器)
     @change-theme="handleThemeChange"
   >
     <!-- 插槽内容 -->
-  </ChatContainer>
+  </AiChat>
 </template>
 ```
 
@@ -331,7 +334,7 @@ ChatContainer (主容器)
 
 ```vue
 <template>
-  <ChatContainer
+  <AiChat
     v-model:messages="messages"
     :i18n="{
       chat: {
@@ -361,7 +364,7 @@ ChatContainer (主容器)
 
 ```vue
 <template>
-  <ChatContainer
+  <AiChat
     v-model:messages="messages"
     :auto-scroll="true"
     :auto-scroll-pause-time="3000"
@@ -390,7 +393,7 @@ ChatContainer (主容器)
 
 ```vue
 <template>
-  <ChatContainer
+  <AiChat
     v-model:messages="messages"
     :show-sender="true"
     :has-sender-tools="true"
@@ -562,7 +565,7 @@ const handleDeleteRecord = (record: ChatRecord) => {
 ### 流式消息处理
 
 ```typescript
-import { SSEClient } from '@kernelift/ai-chat';
+import { SSEClient } from '@gci/ai-chat';
 
 const handleStreamResponse = async (question: string, enableThink?: boolean) => {
   const client = new SSEClient('your-token', 'https://api.example.com');
@@ -673,7 +676,7 @@ const handleStreamResponse = async (question: string, enableThink?: boolean) => 
 
 ```scss
 // 自定义主题
-.kernelift-chat-container {
+.gci-chat-container {
   // 主容器样式
   border-radius: 16px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
@@ -699,7 +702,7 @@ const handleStreamResponse = async (question: string, enableThink?: boolean) => 
 
 // 自定义消息气泡
 .custom-chat-bubble {
-  .kernelift-chat-bubble__assistant {
+  .gci-chat-bubble__assistant {
     background: linear-gradient(135deg, #ffffff 0%, #f0f4ff 100%);
     border: 1px solid #e1e8ff;
     border-radius: 12px;
@@ -709,7 +712,7 @@ const handleStreamResponse = async (question: string, enableThink?: boolean) => 
     }
   }
 
-  .kernelift-chat-bubble__user {
+  .gci-chat-bubble__user {
     &-content {
       background: linear-gradient(135deg, var(--kl-chat-primary-color) 0%, #8a86f1 100%);
       color: white;
@@ -724,7 +727,7 @@ const handleStreamResponse = async (question: string, enableThink?: boolean) => 
 
 // 自定义发送器
 .custom-chat-sender {
-  .kernelift-chat-sender__textarea {
+  .gci-chat-sender__textarea {
     border-radius: 8px;
     border: 2px solid var(--kl-border-color);
 
@@ -734,7 +737,7 @@ const handleStreamResponse = async (question: string, enableThink?: boolean) => 
     }
   }
 
-  .kernelift-chat-sender__send-button {
+  .gci-chat-sender__send-button {
     background: linear-gradient(135deg, var(--kl-chat-primary-color) 0%, #8a86f1 100%);
     border-radius: 8px;
 
@@ -778,7 +781,7 @@ const handleStreamResponse = async (question: string, enableThink?: boolean) => 
     animation: slideInFromRight 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .kernelift-chat-bubble {
+  .gci-chat-bubble {
     margin: 8px 12px;
 
     &__actions {
@@ -797,21 +800,24 @@ const handleStreamResponse = async (question: string, enableThink?: boolean) => 
 ```vue
 <!-- eslint-disable @typescript-eslint/no-explicit-any -->
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import { ChatContainer } from '@kernelift/ai-chat';
+import { ref, watch, onMounted, nextTick } from 'vue';
+import { AiChat } from '@gci/ai-chat';
 import { useChat } from './use-chat';
-import '@kernelift/ai-chat/style.css';
-import { CHAT_API_KEY, CHAT_BASE_URL, CHAT_DEFAULT_MODEL } from './constants';
+import '@gci/ai-chat/style.css';
+import { CHAT_BASE_URL, CHAT_DEFAULT_MODEL } from './constants';
 import Button from 'primevue/button';
 import Textarea from 'primevue/textarea';
 import Select from 'primevue/select';
 import Dialog from 'primevue/dialog';
 import Toast from 'primevue/toast';
 import ConfirmDialog from 'primevue/confirmdialog';
+import { useStorage } from '@vueuse/core';
 
 defineOptions({
   name: 'AiChat'
 });
+
+const CHAT_API_KEY = useStorage('CHAT_API_KEY', ''); // 从本地存储获取 API Key
 
 const {
   isNewRecord,
@@ -853,7 +859,7 @@ const {
   updateRecordPrompt,
   handleShowEditPrompt
 } = useChat({
-  apiKey: CHAT_API_KEY,
+  apiKey: CHAT_API_KEY.value,
   baseURL: CHAT_BASE_URL,
   uuid: 'openai',
   model: CHAT_DEFAULT_MODEL
@@ -863,6 +869,9 @@ const tempEditContent = ref('');
 const isRecording = ref(false);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let recognition: any = null;
+
+const showApiKeyDialog = ref(false);
+const tempApiKey = ref('');
 
 function toggleSpeech() {
   if (isRecording.value) {
@@ -924,11 +933,33 @@ function handleKeydown(event: KeyboardEvent, execute: any) {
   }
   // Shift + Enter 默认行为（换行）会自动生效
 }
+
+function checkApiKey() {
+  if (!CHAT_API_KEY.value || CHAT_API_KEY.value.trim() === '') {
+    showApiKeyDialog.value = true;
+  }
+}
+
+function saveApiKey() {
+  if (tempApiKey.value && tempApiKey.value.trim() !== '') {
+    CHAT_API_KEY.value = tempApiKey.value.trim();
+    showApiKeyDialog.value = false;
+    tempApiKey.value = '';
+
+    nextTick(() => {
+      location.reload();
+    });
+  }
+}
+
+onMounted(() => {
+  checkApiKey();
+});
 </script>
 
 <template>
   <div class="w-full h-full relative">
-    <ChatContainer
+    <AiChat
       v-model="userQuestion"
       v-model:loading="senderLoading"
       v-model:messages="chatMessages"
@@ -1161,7 +1192,7 @@ function handleKeydown(event: KeyboardEvent, execute: any) {
           @click="toggleSpeech"
         />
       </template>
-    </ChatContainer>
+    </AiChat>
 
     <Dialog
       v-if="editRecord"
@@ -1325,6 +1356,42 @@ function handleKeydown(event: KeyboardEvent, execute: any) {
         />
       </template>
     </Dialog>
+
+    <!-- API Key 输入弹窗 -->
+    <Dialog
+      v-model:visible="showApiKeyDialog"
+      header="API Key 配置"
+      :modal="true"
+      :closable="false"
+      :dismissable-mask="false"
+      :style="{ width: '500px' }"
+    >
+      <div class="flex flex-col gap-4">
+        <div class="text-sm text-surface-600 mb-2">
+          <i class="pi pi-exclamation-triangle text-orange-500 mr-2"></i>
+          请输入您的 API Key 以使用 AI 对话功能。
+        </div>
+        <div class="flex flex-col gap-2">
+          <label class="font-semibold">API Key</label>
+          <Textarea
+            v-model="tempApiKey"
+            rows="3"
+            class="w-full"
+            placeholder="请输入您的 API Key"
+            @keydown="handleKeydown($event, saveApiKey)"
+          />
+        </div>
+        <div class="flex justify-end gap-2 mt-2">
+          <Button
+            label="保存"
+            icon="pi pi-check"
+            :disabled="!tempApiKey || tempApiKey.trim() === ''"
+            @click="saveApiKey"
+          />
+        </div>
+      </div>
+    </Dialog>
+
     <Toast />
     <ConfirmDialog />
   </div>
@@ -1358,6 +1425,21 @@ function handleKeydown(event: KeyboardEvent, execute: any) {
 </style>
 
 <style>
+/* Override PrimeVue primary color for this page */
+:root {
+  --p-primary-50: #f5f3ff;
+  --p-primary-100: #ede9fe;
+  --p-primary-200: #ddd6fe;
+  --p-primary-300: #c4b5fd;
+  --p-primary-400: #a78bfa;
+  --p-primary-500: #7624fe;
+  --p-primary-600: #6b21d8;
+  --p-primary-700: #5b21b6;
+  --p-primary-800: #4c1d95;
+  --p-primary-900: #3b1a7a;
+  --p-primary-950: #2e1065;
+}
+
 .small-dropdown {
   border-radius: 1rem !important;
   overflow: hidden;
@@ -1373,12 +1455,7 @@ function handleKeydown(event: KeyboardEvent, execute: any) {
 
 ```ts
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import type {
-  BubbleEventAction,
-  ChatMessage,
-  ChatRecord,
-  ChatRecordAction
-} from '@kernelift/ai-chat';
+import type { BubbleEventAction, ChatMessage, ChatRecord, ChatRecordAction } from '@gci/ai-chat';
 import { formatDate, useAsyncState, useStorage } from '@vueuse/core';
 import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';
@@ -2075,7 +2152,7 @@ export const useChat = (options: {
 
 ```scss
 // 自定义主题
-.kernelift-chat-container {
+.gci-chat-container {
   // 修改主容器样式
   border-radius: 16px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
@@ -2093,12 +2170,12 @@ export const useChat = (options: {
 
 // 自定义消息气泡
 .custom-chat-bubble {
-  .kernelift-chat-bubble__assistant {
+  .gci-chat-bubble__assistant {
     background: linear-gradient(135deg, #ffffff 0%, #f0f4ff 100%);
     border: 1px solid #e1e8ff;
   }
 
-  .kernelift-chat-bubble__user {
+  .gci-chat-bubble__user {
     &-content {
       background: linear-gradient(135deg, var(--kl-chat-primary-color) 0%, #8a86f1 100%);
       color: white;
@@ -2109,41 +2186,42 @@ export const useChat = (options: {
 
 ### Props 属性
 
-| 属性名                  | 类型                     | 默认值      | 说明                                               |
-| ----------------------- | ------------------------ | ----------- | -------------------------------------------------- |
-| `records`               | `ChatRecord[]`           | `[]`        | 聊天记录列表                                       |
-| `recordActions`         | `ChatRecordAction[]`     | `[]`        | 记录操作按钮配置                                   |
-| `bubbleExtEvents`       | `BubbleEventAction[]`    | `[]`        | 气泡扩展事件配置                                   |
-| `hasHeader`             | `boolean`                | `true`      | 是否显示头部                                       |
-| `headerHeight`          | `number`                 | `38`        | 头部高度 (px)                                      |
-| `hasThemeMode`          | `boolean`                | `false`     | 是否支持主题切换                                   |
-| `hasThinking`           | `boolean`                | `true`      | 是否支持深度思考                                   |
-| `hasNetSearch`          | `boolean`                | `false`     | 是否支持联网搜索                                   |
-| `hasSenderTools`        | `boolean`                | `false`     | 是否显示发送工具区                                 |
-| `alwaysShowSenderTools` | `boolean`                | `false`     | 是否始终显示发送工具区（即使 showSender 为 false） |
-| `showWorkspace`         | `boolean`                | `true`      | 是否显示工作区                                     |
-| `showSender`            | `boolean`                | `true`      | 是否显示发送框                                     |
-| `isGenerateLoading`     | `boolean`                | `undefined` | 是否正在生成                                       |
-| `defaultRecordId`       | `string`                 | `undefined` | 默认记录ID                                         |
-| `defaultCollapse`       | `boolean`                | `false`     | 侧边栏默认折叠                                     |
-| `defaultAsideWidth`     | `number`                 | `250`       | 侧边栏默认宽度                                     |
-| `markdownClassName`     | `string`                 | `undefined` | Markdown 样式类名                                  |
-| `primaryColor`          | `string`                 | `'#615ced'` | 主题色                                             |
-| `themeMode`             | `'light' \| 'dark'`      | `'light'`   | 主题模式                                           |
-| `enableNet`             | `boolean`                | `undefined` | 联网搜索启用状态                                   |
-| `enableThink`           | `boolean`                | `undefined` | 深度思考启用状态                                   |
-| `disabledCreateRecord`  | `boolean`                | `false`     | 是否禁用新建聊天记录                               |
-| `inputHeight`           | `number`                 | `140`       | 输入框最大高度 (px)                                |
-| `defaultInputHeight`    | `number`                 | `62`        | 输入框初始默认高度 (px)                            |
-| `onCopy`                | `(code: string) => void` | `undefined` | 复制代码回调                                       |
-| `i18n`                  | `Record<string, any>`    | `zhCN`      | 国际化配置                                         |
-| `autoScroll`            | `boolean`                | `true`      | 是否自动滚动到底部                                 |
-| `autoScrollPauseTime`   | `number`                 | `3000`      | 用户滚动时自动滚动暂停时间 (ms)                    |
-| `uuid`                  | `string`                 | `'default'` | 实例唯一标识，用于存储状态                         |
-| `markdownPlugins`       | `any[]`                  | `[]`        | Markdown 插件列表                                  |
-| `markdownOptions`       | `any`                    | `{}`        | Markdown 配置选项                                  |
-| `markdownRender`        | `Component`              | `MdRender`  | 自定义 markdown 渲染组件                           |
-| `onMarkdownAfterRender` | `(md: any) => void`      | `undefined` | Markdown 渲染后回调                                |
+| 属性名                        | 类型                     | 默认值      | 说明                                               |
+| ----------------------------- | ------------------------ | ----------- | -------------------------------------------------- |
+| `records`                     | `ChatRecord[]`           | `[]`        | 聊天记录列表                                       |
+| `recordActions`               | `ChatRecordAction[]`     | `[]`        | 记录操作按钮配置                                   |
+| `bubbleExtEvents`             | `BubbleEventAction[]`    | `[]`        | 气泡扩展事件配置                                   |
+| `hasHeader`                   | `boolean`                | `true`      | 是否显示头部                                       |
+| `headerHeight`                | `number`                 | `38`        | 头部高度 (px)                                      |
+| `hasThemeMode`                | `boolean`                | `false`     | 是否支持主题切换                                   |
+| `hasThinking`                 | `boolean`                | `true`      | 是否支持深度思考                                   |
+| `hasNetSearch`                | `boolean`                | `false`     | 是否支持联网搜索                                   |
+| `hasSenderTools`              | `boolean`                | `false`     | 是否显示发送工具区                                 |
+| `alwaysShowSenderTools`       | `boolean`                | `false`     | 是否始终显示发送工具区（即使 showSender 为 false） |
+| `showWorkspace`               | `boolean`                | `true`      | 是否显示工作区                                     |
+| `showSender`                  | `boolean`                | `true`      | 是否显示发送框                                     |
+| `isGenerateLoading`           | `boolean`                | `undefined` | 是否正在生成                                       |
+| `defaultRecordId`             | `string`                 | `undefined` | 默认记录ID                                         |
+| `defaultCollapse`             | `boolean`                | `false`     | 侧边栏默认折叠                                     |
+| `defaultAsideWidth`           | `number`                 | `250`       | 侧边栏默认宽度                                     |
+| `markdownClassName`           | `string`                 | `undefined` | Markdown 样式类名                                  |
+| `primaryColor`                | `string`                 | `'#615ced'` | 主题色                                             |
+| `themeMode`                   | `'light' \| 'dark'`      | `'light'`   | 主题模式                                           |
+| `enableNet`                   | `boolean`                | `undefined` | 联网搜索启用状态                                   |
+| `enableThink`                 | `boolean`                | `undefined` | 深度思考启用状态                                   |
+| `disabledCreateRecord`        | `boolean`                | `false`     | 是否禁用新建聊天记录                               |
+| `inputHeight`                 | `number`                 | `140`       | 输入框最大高度 (px)                                |
+| `defaultInputHeight`          | `number`                 | `62`        | 输入框初始默认高度 (px)                            |
+| `onCopy`                      | `(code: string) => void` | `undefined` | 复制代码回调                                       |
+| `i18n`                        | `Record<string, any>`    | `zhCN`      | 国际化配置                                         |
+| `autoScroll`                  | `boolean`                | `true`      | 是否自动滚动到底部                                 |
+| `autoScrollPauseTime`         | `number`                 | `3000`      | 用户滚动时自动滚动暂停时间 (ms)                    |
+| `uuid`                        | `string`                 | `'default'` | 实例唯一标识，用于存储状态                         |
+| `markdownPlugins`             | `any[]`                  | `[]`        | Markdown 插件列表                                  |
+| `markdownOptions`             | `any`                    | `{}`        | Markdown 配置选项                                  |
+| `markdownRender`              | `Component`              | `MdRender`  | 自定义 markdown 渲染组件                           |
+| `onMarkdownAfterRender`       | `(md: any) => void`      | `undefined` | Markdown 渲染后回调                                |
+| `disabledMarkdownIncremental` | `boolean`                | `false`     | 是否禁用Markdown增量渲染功能，默认开启             |
 
 ### v-model 双向绑定
 
@@ -2280,7 +2358,7 @@ interface ChatRecordAction {
 A: 通过 `primary-color` 属性和 CSS 变量可以自定义主题色：
 
 ```vue
-<ChatContainer primary-color="#ff6b6b" />
+<AiChat primary-color="#ff6b6b" />
 ```
 
 ```css
@@ -2325,7 +2403,7 @@ const handleSend = async (text: string) => {
 A: 使用内置的 SSEClient 或其他流式处理方案：
 
 ```typescript
-import { SSEClient } from '@kernelift/ai-chat';
+import { SSEClient } from '@gci/ai-chat';
 
 const handleStreamResponse = async (question: string) => {
   const client = new SSEClient('token', 'https://api.example.com');

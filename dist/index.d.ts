@@ -4,23 +4,23 @@ import { ComponentProvideOptions } from 'vue';
 import { DefineComponent } from 'vue';
 import { PublicProps } from 'vue';
 import { Ref } from 'vue';
-import { RemovableRef } from '@vueuse/core';
 import { VNode } from 'vue';
+import { WritableComputedRef } from 'vue';
 
 declare const __VLS_component: DefineComponent<__VLS_PublicProps, {}, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, {
 "update:modelValue": (value: ChatMessage) => any;
 } & {
-"bubble-event": (eventName: string, data: ChatMessage) => any;
+"bubble-event": (eventName: string, data: ChatMessage, extra?: any) => any;
 }, string, PublicProps, Readonly<__VLS_PublicProps> & Readonly<{
-"onBubble-event"?: ((eventName: string, data: ChatMessage) => any) | undefined;
+"onBubble-event"?: ((eventName: string, data: ChatMessage, extra?: any) => any) | undefined;
 "onUpdate:modelValue"?: ((value: ChatMessage) => any) | undefined;
 }>, {}, {}, {}, {}, string, ComponentProvideOptions, false, {}, HTMLDivElement>;
 
 declare const __VLS_component_2: DefineComponent<__VLS_PublicProps_2, {
 isMobile: Ref<boolean, boolean>;
-collapse: RemovableRef<boolean>;
-asideWidth: RemovableRef<number>;
-workspaceWidth: RemovableRef<number>;
+collapse: WritableComputedRef<boolean, boolean>;
+asideWidth: WritableComputedRef<number, number>;
+workspaceWidth: WritableComputedRef<number, number>;
 scrollToBottom: (smooth?: boolean) => void;
 }, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, {
 "update:modelValue": (value: string) => any;
@@ -141,6 +141,10 @@ declare type __VLS_Props = {
     markdownRender?: Component;
     themeMode?: 'light' | 'dark';
     iconColor?: string;
+    /**
+     * @description 是否禁用Markdown增量渲染功能，默认开启
+     */
+    disabledMarkdownIncremental?: boolean;
 };
 
 declare type __VLS_Props_2 = ChatProps;
@@ -484,6 +488,7 @@ export declare interface BubbleEventAction {
     active?: boolean;
     activeColor?: string;
     iconStyle?: Record<string, string | undefined>;
+    showInUser?: boolean;
 }
 
 declare function changeNetState(): void;
@@ -633,6 +638,10 @@ export declare interface ChatProps {
     markdownOptions?: any;
     markdownRender?: Component;
     onMarkdownAfterRender?: (md: any) => void;
+    /**
+     * @description 是否禁用Markdown增量渲染功能，默认开启
+     */
+    disabledMarkdownIncremental?: boolean;
 }
 
 /**
@@ -814,6 +823,14 @@ export declare const i18nMessages: {
             note: string;
             empty: string;
             welcome: string;
+            today: string;
+            yesterday: string;
+            lastWeek: string;
+            lastMonth: string;
+            earlier: string;
+            hideSender: string;
+            showSender: string;
+            scrollToBottom: string;
         };
     };
     'en-US': {
@@ -841,6 +858,14 @@ export declare const i18nMessages: {
             note: string;
             empty: string;
             welcome: string;
+            today: string;
+            yesterday: string;
+            lastWeek: string;
+            lastMonth: string;
+            earlier: string;
+            hideSender: string;
+            showSender: string;
+            scrollToBottom: string;
         };
     };
 };
